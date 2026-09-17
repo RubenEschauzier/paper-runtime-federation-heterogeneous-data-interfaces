@@ -1,0 +1,505 @@
+% !TEX root = math-notes.tex
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{stmaryrd}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[colorlinks,linkcolor=blue!50!black]{hyperref}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\theoremstyle{plain}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+
+\newcommand{\Dd}{\mathcal{D}}
+\newcommand{\Tt}{\mathcal{T}}
+\newcommand{\dataf}{\mathsf{data}}
+\newcommand{\disc}{\mathsf{disc}}
+\newcommand{\reach}{\mathrm{reach}}
+\newcommand{\ev}[2]{\llbracket #1 \rrbracket_{#2}}
+
+\title{Math toolkit for the delegation / coverage argument}
+\author{Working notes}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-2em}
+
+\section{The two empty things}
+
+Think of a SPARQL result as a \emph{table}.
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+Object & Notation & Meaning \\
+\hline
+Empty solution \emph{set}     & $\emptyset$              & no rows: the pattern did not match \\
+Empty solution \emph{mapping} & $\mu_\emptyset$          & one row, zero columns \\
+Join identity                 & $\{\mu_\emptyset\}$      & $\Omega \bowtie \{\mu_\emptyset\} = \Omega$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\noindent
+The cleanest instance is \textsf{ASK}, which is exactly what $\Delta$ computes:
+\[
+  \textsf{ASK}\ \{\, \langle a\rangle\ \langle p\rangle\ \langle b\rangle \,\}
+  \;=\;
+  \begin{cases}
+    \textsf{true}  & \text{iff } \ev{\cdot}{G} = \{\mu_\emptyset\},\\
+    \textsf{false} & \text{iff } \ev{\cdot}{G} = \emptyset.
+  \end{cases}
+\]
+So $\{\mu_\emptyset\}$ means \emph{yes} and $\emptyset$ means \emph{no}. Note
+$\{\mu_\emptyset\} \neq \emptyset$: it is a one-element set. Writing $\emptyset$ for
+``matched with no bindings'' would invert the indicator. Notation: $\mu_\emptyset$ in
+P\'erez--Arenas--Guti\'errez, $\mu_0$ in SPARQL~1.1 \S18.5, which also names
+$Z = \{\mu_0\}$ the join identity.
+
+\section{The setting as a parameter}
+\label{sec:setting}
+
+Nothing in what follows fixes what $\Dd$ \emph{is}. Every definition and both theorems
+use only three properties: sources hold graphs, query evaluation is monotone in the
+graph, and the reference answer is evaluation over the union of the sources. What varies
+between federation and traversal is not the algebra but \emph{how the set of sources
+comes to be known}, so we make that a parameter.
+
+\begin{definition}[Discovery setting]
+\label{def:setting}
+A \emph{discovery setting} is a tuple
+$W = \langle \Dd, \dataf, \Dd_0, \disc \rangle$: a set of sources $\Dd$, a map
+$\dataf : \Dd \to 2^{\Tt}$ giving the graph each one holds, a set of seeds
+$\Dd_0 \subseteq \Dd$, and a \emph{discovery function} $\disc$ assigning to every BGP $B$
+a map $\disc_B : \Dd \times 2^{\Tt} \to 2^{\Dd}$, where $\disc_B(d, \dataf(d))$ are the
+sources that a retrieved $d$ exposes while $B$ is evaluated.
+\end{definition}
+
+\begin{definition}[Reachable set, reference answer]
+\label{def:reach}
+Iterating discovery from the seeds, let
+$\Dd_{i+1} := \Dd_i \cup \bigcup_{d \in \Dd_i} \disc_B\bigl(d, \dataf(d)\bigr)$. The
+\emph{reachable set} is $\reach_B(W) := \bigcup_{i \geq 0} \Dd_i$, the \emph{reference
+answer} to $B$ is $\ev{B}{G_{\reach_B(W)}}$, and correctness of a delegation is always
+relative to it. Equivalently $\reach_B(W)$ is the smallest set containing $\Dd_0$ and
+closed under $\disc_B$, though nothing below uses that characterisation.
+\end{definition}
+
+\noindent
+The query is a genuine parameter of discovery --- $c_{\mathrm{All}}$ and
+$c_{\mathrm{Match}}$ differ in nothing else --- so $\disc$ and $\reach$ carry it. A
+single $B$ is fixed from here on and we drop the subscript, writing $\disc$ and
+$\reach(W)$.
+
+\begin{center}
+\small\begin{tabular}{@{}p{5.1cm}p{2.7cm}l@{}}
+\hline
+$\disc$ & $\Dd_0$ & recovers \\
+\hline
+$\disc \equiv \emptyset$
+  & all members
+  & classical federated query processing \\
+all URIs occurring in $\dataf(d)$
+  & seed URIs
+  & LTQP under $c_{\mathrm{All}}$ \\
+URIs of triples matching some $tp \in B$
+  & seed URIs
+  & LTQP under $c_{\mathrm{Match}}$ \\
+the subweb spec.\ inside $\dataf(d)$
+  & the user's document
+  & guided traversal \\
+a link path expression from the query
+  & seed URIs
+  & LDQL \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{definition}[State at time $T$, frontier, termination]
+\label{def:state}
+A \emph{state} at time $T$ is a set $\Dd'(T)$ with
+$\Dd_0 \subseteq \Dd'(T) \subseteq \reach(W)$, non-decreasing in $T$. Its
+\emph{frontier} is
+\[
+  F(T) \;:=\; \Bigl( \bigcup_{d \in \Dd'(T)} \disc\bigl(d, \dataf(d)\bigr) \Bigr)
+              \setminus \Dd'(T),
+\]
+the sources exposed by what has been retrieved but not yet retrieved themselves.
+\emph{Discovery has terminated} at $T$ if $F(T) = \emptyset$, equivalently
+$\Dd'(T) = \reach(W)$.
+\end{definition}
+
+\begin{remark}[Federation is the degenerate case]
+Classical federation is $\disc \equiv \emptyset$ with $\Dd_0$ the configured member
+list. Then $\reach(W) = \Dd_0$ and $F(0) = \emptyset$: discovery terminates
+before the first request. This is exactly why exclusive groups are sound there, and why
+the impossibility result below has nothing to say about it.
+\end{remark}
+
+\begin{remark}[The reference answer is not the Web]
+$\ev{B}{G_{\reach(W)}}$ is evaluation over the union of the \emph{reachable}
+sources, not over the Web. Taking $\disc$ to expose every URI and $\Dd$ to be every
+document would give full-web semantics, which is not finitely computable; the traversal
+instantiations keep $\reach(W)$ bounded by the seeds and the criterion.
+\end{remark}
+
+\begin{remark}[How $\Delta$ is obtained differs]
+In a federated setting $\Delta$ comes from cheap probes --- \textsf{ASK} requests, a VoID
+description, an index --- independently of retrieving the data. Under traversal there is
+no such probe: $\Delta(t,d)$ becomes known exactly when $\dataf(d)$ does, so $\Delta$
+collapses into the state. The source-description language is therefore strictly poorer in
+the traversal instantiations, which strengthens rather than weakens the impossibility
+argument.
+\end{remark}
+
+\begin{remark}[Beyond RDF]
+Removing triple patterns and dereferencing leaves monotone conjunctive queries over
+horizontally partitioned data, where a fragment may be shipped whole to one partition
+exactly when no answer spans partitions. That is the classical localisation condition for
+distributed query processing; the RDF instance merely supplies particular notions of
+partition and of link.
+\end{remark}
+
+\section{Relevance and delegation}
+
+\noindent
+\textbf{Notation.} For a set of sources $A \subseteq \Dd$ we write
+$G_A := \bigcup_{d \in A} \dataf(d)$ for the union of their graphs. The three instances
+used below are $G_{\Dd}$ (the whole federation), $G_{\Dd \setminus S}$ (the
+non-delegated sources) and $G_A$ for an arbitrary cover $A$ in the coverage section.
+
+
+\begin{definition}[Source relevance]
+Let $\mathcal{P}$ be the set of triple patterns and $\Dd$ the set of all sources. Write
+$\ev{t}{d}$ for the evaluation of $t$ over the data of $d$. The \emph{relevance
+indicator} $\Delta : \mathcal{P} \times \Dd \to \{0,1\}$ is
+\[
+  \Delta(t,d) =
+  \begin{cases}
+    1, & \text{if } \ev{t}{d} \neq \emptyset,\\[2pt]
+    0, & \text{otherwise,}
+  \end{cases}
+  \qquad
+  \Dd_t := \{\, d \in \Dd \mid \Delta(t,d) = 1 \,\}.
+\]
+$\Delta$ is obtained for the patterns of the query under evaluation only --- one
+\textsf{ASK} probe per pattern per source, as in FedX.
+\end{definition}
+
+\begin{definition}[Federation instance]
+A \emph{federation instance} is a function $\delta : \Dd \to 2^{\Tt}$ giving the graph
+held by each source. It is \emph{consistent} with $\Delta$ for $t_1,\dots,t_n$, written
+$\delta \models \Delta$, if
+\[
+  \Delta(t_i,d) = 1 \iff \ev{t_i}{\delta(d)} \neq \emptyset
+  \qquad \text{for all } i \in \{1,\dots,n\},\ d \in \Dd .
+\]
+\end{definition}
+
+\begin{remark}
+$\Delta$ is what the engine \emph{knows}; $\delta$ is what is \emph{there}. Many $\delta$
+give the same $\Delta$, and the planner must be correct for all of them. Do not call this
+a ``source assignment'': FedQPL Def.~8 already uses that term for a query plan.
+\end{remark}
+
+\begin{definition}[Delegation]
+Let $B$ be a BGP and $B' \subseteq B$ the delegated fragment. Let $S \subseteq \Dd$ be a
+set of sources such that every $d \in S$ provides an interface $I_d = (L_d, \varrho_d)$
+with $B' \in L_d$; that is, each delegated source accepts $B'$ as a \emph{single}
+request, returning $\varrho_d\big(B',\dataf(d)\big) = \ev{B'}{\dataf(d)}$. The delegated
+plan obtains for $B'$
+\[
+  R \;:=\; \Big( \bigcup_{d \in S} \varrho_d\big(B', \dataf(d)\big) \Big)
+           \;\cup\; \ev{B'}{G_{\Dd \setminus S}},
+\]
+and the delegation is \emph{correct} if
+\[
+  R \;\bowtie\; \ev{B \setminus B'}{G_{\Dd}} \;=\; \ev{B}{G_{\Dd}} .
+\]
+\end{definition}
+
+\begin{remark}[Where the request granularity lives]
+Semantically $\ev{B'}{\dataf(d)} = \bowtie_{t \in B'} \ev{t}{\dataf(d)}$, so over a
+single source one conjunctive request and $|B'|$ pattern requests return the same
+answers. The two \emph{plans} are distinguished by the order of union and join:
+\[
+  \bigcup_{d \in S} \ev{B'}{\dataf(d)}
+  \qquad\text{versus}\qquad
+  \bowtie_{t \in B'} \ \bigcup_{d \in S} \ev{t}{\dataf(d)} .
+\]
+Union outside the join is one request per source; join outside the union is one request
+per pattern per source. Only the first is delegation.
+\end{remark}
+
+\begin{remark}[Capability and cost]
+The condition $B' \in L_d$ is what makes ``single request'' meaningful, and it is the
+point at which interface heterogeneity enters: a triple-pattern-only interface has
+$L_d = \mathcal{P}$ and admits no $B'$ with $|B'| > 1$, while a composite resource
+advertising the path $tp_1/tp_2$ has $L_d = \{tp_1/tp_2\}$, so $B' \in L_d$ is exactly
+the requirement that the delegated fragment match what the resource publishes. Counting
+requests as in FedQPL's sa-cost, delegation costs $|S|$ where the per-pattern route costs
+$|B'| \cdot |S|$.
+\end{remark}
+
+\begin{remark}[Soundness is free]
+$\dataf(d) \subseteq G_{\Dd}$ and $G_{\Dd \setminus S} \subseteq G_{\Dd}$, so
+$R \subseteq \ev{B'}{G_{\Dd}}$; with $\bowtie$ monotone, the left-hand side is always a
+subset of the right. Delegation can never produce a wrong answer, only lose results. The
+whole content of the definition is completeness.
+\end{remark}
+
+\begin{remark}[Sanity checks]
+$S = \emptyset$ gives $R = \ev{B'}{G_{\Dd}}$: not delegating is trivially correct.
+$S = \Dd$ gives $R = \bigcup_{d \in \Dd} \ev{B'}{\dataf(d)}$: the no-inter-source-join
+condition. $S = \{k\}$ with $k$ exclusive gives $R = \ev{B'}{\dataf(k)} =
+\ev{B'}{G_{\Dd}}$: FedX's exclusive group, and FedQPL Def.~7 with
+$\varphi = \mathrm{req}^{B'}_{k}$.
+\end{remark}
+
+\begin{remark}[What is lost]
+Since $\ev{B}{G} = \ev{B'}{G} \bowtie \ev{B \setminus B'}{G}$, the gap between $R$ and
+$\ev{B'}{G_{\Dd}}$ consists exactly of the $B'$-solutions spanning a boundary introduced
+by the grouping: across the $S$ / $\Dd \setminus S$ split, or between two distinct
+sources inside $S$. Such a solution is harmless when it has no join partner in
+$B \setminus B'$, since it would have been discarded anyway.
+\end{remark}
+
+\begin{remark}[Why the two-block form does not work]
+The variant $\ev{B}{\Dd} = \ev{B}{\Dd \setminus \{d\}} \cup \ev{B}{d}$ forbids only
+joins crossing the $d$ boundary; it is blind to joins \emph{inside} the block
+$\Dd \setminus \{d\}$. Take $\Dd = \{d, d_1, d_2\}$ and $B = \{t_1,t_2\}$ sharing a
+variable, with $t_1$ matching only at $d_1$, $t_2$ only at $d_2$, and the two joining.
+The equation holds, yet an inter-source join exists.
+\end{remark}
+
+\begin{theorem}[Correct delegation]
+Let $B' = \{t_1,\dots,t_n\}$. Delegation of $B'$ to $S$ is correct for every federation
+instance consistent with $\Delta$ if and only if
+\[
+  \Big( \exists\, k \in S : \bigcup_{i=1}^{n} \Dd_{t_i} \subseteq \{k\} \Big)
+  \quad\text{or}\quad
+  \Big( \bigcup_{i=1}^{n} \Dd_{t_i} \Big) \cap S = \emptyset .
+\]
+\end{theorem}
+
+\begin{remark}
+All relevant sources lie inside a single delegated source, or none of them lies in $S$
+at all --- the latter being the ``delegating to an irrelevant source is harmless'' case,
+which plain exclusivity does not capture. Anything in between admits a spanning witness.
+Both disjuncts are forced by the poverty of $\Delta$: recording only per-pattern
+relevance, it cannot reveal whether a join actually crosses sources. The quantifier over
+instances is essential --- on a single fixed instance the ``only if'' fails, since two
+sources holding identical data are both relevant yet delegating to either is correct.
+\end{remark}
+
+\section{Incomplete discovery}
+\label{sec:incomplete}
+
+Definition~1 gives $\Delta$ over all of $\Dd$, so an engine holding $\Delta$ knows
+everything. To say anything about discovery we must separate what is true from what has
+been seen.
+
+\begin{definition}[Observation, completion, decision procedure]
+\label{def:obs}
+At time $T$ the engine has retrieved $\Dd'(T)$ and knows $\dataf(e)$ for each
+$e \in \Dd'(T)$; write $O(T) := \bigl( \Dd'(T), (\dataf(e))_{e \in \Dd'(T)} \bigr)$. It
+can therefore also compute the frontier $F(T)$, but knows nothing of $\dataf(d)$ for
+$d \in F(T)$. A \emph{completion} of $O(T)$ is any discovery setting
+$\widehat{W} = \langle \widehat{\Dd}, \widehat{\dataf}, \Dd_0, \disc \rangle$ agreeing
+with $O(T)$ on $\Dd'(T)$; the adversary's freedom is exactly the data behind the
+frontier. A \emph{decision procedure} is a partial function $\Pi$ from observations to
+pairs $(B', S)$ with $S \subseteq \Dd'(T)$, and is \emph{sound} if whenever
+$\Pi(O(T)) = (B', S)$, delegating $B'$ to $S$ is correct in \emph{every} completion
+of $O(T)$.
+\end{definition}
+
+\begin{theorem}[No certificate under incomplete discovery]
+\label{thm:nocert}
+Let $O(T)$ be an observation at which discovery has not terminated, i.e.\ $F(T) \neq \emptyset$. Then there
+are $B'$, $S \subseteq \Dd'(T)$ and completions $\widehat{\Dd}_1, \widehat{\Dd}_2$ of
+$O(T)$ such that delegating $B'$ to $S$ is correct in $\widehat{\Dd}_1$ and incorrect in
+$\widehat{\Dd}_2$. Consequently no sound decision procedure can output $(B', S)$.
+\end{theorem}
+
+\begin{proof}
+Take $B' = B = \{t_1, t_2\}$ with
+$t_1 = (?x, p, ?y)$ and $t_2 = (?y, q, ?z)$, so that $B \setminus B' = \emptyset$ and the
+outer join in Definition~3 is with $\{\mu_\emptyset\}$, i.e.\ the identity. Let the
+observation be $\Dd'(T) = \{e\}$ with $\dataf(e) = \{(a,p,b)\}$, and let $S = \{e\}$.
+
+\emph{World 1.} Let $\widehat{\Dd}_1 = \{e\}$. Here $\Dd_{t_1} = \{e\}$ and
+$\Dd_{t_2} = \emptyset$, so $\ev{B'}{G_{\widehat{\Dd}_1}} = \emptyset$, and likewise
+$R = \emptyset$. The delegation is correct.
+
+\emph{World 2.} Let $\widehat{\Dd}_2 = \{e, d^{*}\}$ with
+$\dataf(d^{*}) = \{(b,q,c)\}$, where $d^{*} \in F(T)$ sits on the frontier. Now
+\[
+  \ev{B'}{G_{\widehat{\Dd}_2}} = \bigl\{\, \{?x \mapsto a,\ ?y \mapsto b,\ ?z \mapsto c\} \,\bigr\}
+  \;\neq\; \emptyset,
+\]
+whereas both terms of $R$ vanish:
+\[
+  \bigcup_{d \in S} \ev{B'}{\dataf(d)} = \ev{B'}{\dataf(e)} = \emptyset,
+  \qquad
+  \ev{B'}{G_{\widehat{\Dd}_2 \setminus S}} = \ev{B'}{\dataf(d^{*})} = \emptyset,
+\]
+since $e$ has no $t_2$-match and $d^{*}$ has no $t_1$-match. Hence $R = \emptyset$ and
+the answer is lost: the delegation is incorrect.
+
+Both completions agree with $O(T)$ on $\Dd'(T)$, so no function of $O(T)$ can
+distinguish them.
+\end{proof}
+
+\begin{corollary}[Infinite web]
+\label{cor:infinite}
+If $\reach(W)$ is infinite then $F(T) \neq \emptyset$ at every time $T$, and hence no
+sound decision procedure can certify a delegation at any time.
+\end{corollary}
+
+\begin{proof}
+At any time $T$ the engine has performed finitely many retrievals, so $\Dd'(T)$ is
+finite. Suppose $F(T) = \emptyset$. Then $\disc\bigl(d, \dataf(d)\bigr) \subseteq \Dd'(T)$
+for every $d \in \Dd'(T)$, i.e.\ $\Dd'(T)$ is closed under discovery, and
+$\Dd_0 \subseteq \Dd'(T)$ by Definition~\ref{def:state}. By induction on $i$ we get
+$\Dd_i \subseteq \Dd'(T)$ for every $i$: the base case is the seed inclusion, and if
+$\Dd_i \subseteq \Dd'(T)$ then
+$\Dd_{i+1} = \Dd_i \cup \bigcup_{d \in \Dd_i} \disc\bigl(d, \dataf(d)\bigr) \subseteq
+\Dd'(T)$ by closure. Hence $\reach(W) = \bigcup_i \Dd_i \subseteq \Dd'(T)$ is finite,
+contradicting the assumption. So $F(T) \neq \emptyset$, and Theorem~\ref{thm:nocert}
+applies at every $T$.
+\end{proof}
+
+\begin{remark}[Never, not merely hard]
+The corollary is stronger than a statement about cost. It is not that certification takes
+a long time on a large web; it is that at no finite time does a certificate exist. Infinite
+reachable sets are not exotic --- a server generating a document per natural number, or
+per geographic area, suffices --- so this is the regime the traversal instantiations
+actually live in. Contrapositively, certifying a delegation requires $\reach(W)$ to be
+finite \emph{and} to have been retrieved in full.
+\end{remark}
+
+\begin{remark}[Why $\Delta$ alone cannot establish this]
+The witness must exhibit concrete triples. At the level of $\Delta$ the two worlds are
+distinguished only by $\Delta(t_2, d^{*}) = 1$, and that alone does not settle
+correctness: if $d^{*}$ merely \emph{duplicated} data already held by $e$, no new
+solution would appear and the delegation would remain correct. What breaks it is a
+triple that is new \emph{and} joins across the boundary.
+\end{remark}
+
+\begin{remark}[Relevance elsewhere is not by itself a problem]
+Discovering $\Delta(t, d) = 1$ for an undiscovered $d \notin S$ does \emph{not} break the
+delegation. Since $d \in \Dd \setminus S$, the second term $\ev{B'}{G_{\Dd \setminus S}}$
+of $R$ still collects everything $d$ can answer on its own. Only solutions
+\emph{spanning} $S$ and its complement --- or spanning two distinct sources inside $S$
+--- are lost. This is the narrower fact the impossibility argument needs.
+\end{remark}
+
+\begin{remark}[Side conditions]
+The construction needs $B'$ connected (two patterns sharing a variable), $S \neq
+\emptyset$, and at least one pattern of $B'$ matched within $S$; otherwise there is
+nothing for the adversary's triple to join to. Taking $B' = B$ removes any further
+condition, since then no join partner in $B \setminus B'$ is required.
+\end{remark}
+
+\begin{remark}[What this asks of the assumption]
+The argument turns entirely on the adversary being free to place arbitrary data behind an
+unfetched URI. Any fix must remove that freedom rather than improve the source
+descriptions: no refinement of $\Delta$ over $\Dd'(T)$ helps, because both worlds agree
+there. This is what coverage and authority declarations supply in the next section.
+\end{remark}
+
+\section{Coverage}
+
+\begin{definition}[Coverage]
+$\mathrm{cov} : \Dd \to 2^{\Dd}$, in two flavours:
+\[
+  d \in \mathrm{cov}_{\mathsf{agg}}(c) \iff \dataf(d) \subseteq \dataf(c),
+  \qquad
+  d \in \mathrm{cov}_{\mathsf{idx}}(x) \iff x \text{ publishes } \Delta(\cdot,d).
+\]
+An aggregator lets you \emph{act}; an index lets you \emph{decide}. Lift to sets by
+$\mathrm{cov}(A) := \bigcup_{c \in A}\mathrm{cov}(c)$, and call $A$ a \emph{cover} of
+$\Dd$ if $\mathrm{cov}(A) = \Dd$.
+\end{definition}
+
+\begin{remark}
+$\mathrm{cov}$ is extensive, monotone and idempotent (coverage is transitive), hence a
+closure operator on $2^{\Dd}$. Covers form an up-set; the minimal ones are the objects
+of interest.
+\end{remark}
+
+\begin{lemma}[Answer equivalence]
+If $A$ is an aggregator-cover of $\Dd$ then $G_A = G_{\Dd}$, and therefore
+$\ev{Q}{G_A} = \ev{Q}{G_{\Dd}}$ for every monotone $Q$.
+\end{lemma}
+
+\begin{lemma}[Observation asymmetry]
+Let $\Dd'_t(T) := \{\, d \in \Dd'(T) \mid \Delta(t,d) = 1 \,\} \subseteq \Dd_t$. Then
+\[
+  |\Dd'_t(T)| \geq 2 \;\Longrightarrow\; |\Dd_t| \geq 2,
+  \qquad\text{but}\qquad
+  |\Dd'_t(T)| = 1 \;\not\Longrightarrow\; |\Dd_t| = 1 .
+\]
+\end{lemma}
+
+\noindent
+Non-exclusivity is soundly concludable from a finite observation; exclusivity is not.
+That asymmetry \emph{is} the impossibility result.
+
+\begin{definition}[Discovery closure]
+Recall $\disc(d, \dataf(d))$ from Definition~\ref{def:setting}. A set $A$ is
+\emph{discovery-closed} if
+\[
+  \forall c \in A : \ \disc\bigl(c, \dataf(c)\bigr) \subseteq \mathrm{cov}(A).
+\]
+\end{definition}
+
+\begin{lemma}[Frontier]
+If $A$ is discovery-closed and $\mathsf{seeds} \subseteq A$, then
+$\mathrm{reach}(\mathsf{seeds}) \subseteq \mathrm{cov}(A)$.
+\end{lemma}
+
+\noindent
+This converts the unverifiable global condition ``I have seen everything'' into the
+local, checkable one ``my frontier is covered''.
+
+\begin{theorem}[Decidability under coverage]
+If at time $T$ some $A \subseteq \Dd'(T)$ is discovery-closed with admissible index
+coverage, then $\Dd_t$ is computable from $\Dd'(T)$ alone, and exclusivity of $k$ for
+$\{t_1,\dots,t_n\}$ is decidable at time $T$.
+\end{theorem}
+
+\begin{theorem}[Impossibility without coverage]
+%% specialisation of Theorem~\ref{thm:nocert} to the coverage setting
+If $\mathrm{cov}(\Dd'(T)) \subsetneq \Dd$, then for every $k$ with $k \in \Dd_{t_i}$ for
+all $i$ there is a completion of $\Dd$ consistent with every observation made up to $T$
+under which delegating $\{t_1,\dots,t_n\}$ to $k$ is incorrect.
+\end{theorem}
+
+\begin{corollary}
+Without coverage declarations, exclusivity is \emph{eventually computable} but not
+\emph{finitely computable} (Hartig \& Freytag, Defs.~13--14). With an admissible
+discovery-closed index cover it becomes finitely computable.
+\end{corollary}
+
+\begin{remark}
+Choosing the cheapest $A \subseteq \Dd'(T)$ with $\mathrm{cov}(A) = \Dd$ is weighted Set
+Cover: NP-hard, greedy gives $H_n \approx \ln n$. FedQPL already proves the analogous
+hardness for minimal source assignments by reduction from node cover (Def.~10 and
+Prop.~2), so that precedent is citable rather than new.
+\end{remark}
+
+\begin{remark}
+Coverage and the namespace scope claim are one mechanism: a claim over $N$ covers
+exactly the sources whose data lies in $S_N$. Coverage is the extensional presentation,
+the scope claim the intensional one.
+\end{remark}
+
+\end{document}

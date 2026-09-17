@@ -1,0 +1,704 @@
+% !TEX root = main.tex
+\documentclass[sigconf,review,anonymous]{acmart}
+\usepackage{graphicx}
+%% acmart loads newtxmath, which already defines \Bbbk; amssymb would clash.
+\let\Bbbk\relax
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{stmaryrd}
+\usepackage{booktabs}
+
+\theoremstyle{plain}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{assumption}{Assumption}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+
+\newcommand{\Dd}{\mathcal{D}}
+\newcommand{\Du}{\mathbb{D}}
+\newcommand{\Tt}{\mathcal{T}}
+\newcommand{\dataf}{\mathsf{data}}
+\newcommand{\ev}[2]{\llbracket #1 \rrbracket_{#2}}
+\newcommand{\bigjoin}{\mathop{\bowtie}\limits}
+\newcommand{\disc}{\mathsf{disc}}
+\newcommand{\reach}{\mathrm{reach}}
+
+%% Rights / Conference Info Management
+%% SIGMOD camera-ready will require specific copyright macros;
+%% for submission/review, suppressing them keeps the layout clean.
+\settopmatter{printacmref=false} % Suppress ACM reference block for review
+\renewcommand\footnotetextcopyrightpermission[1]{} % Suppress copyright footnote for review
+\pagestyle{plain} % Simple page numbering for review
+
+%% Metadata
+\title{Your Paper Title Here}
+
+%% Author block
+%% Anonymized automatically because the 'anonymous' class option is active.
+\author{Anonymous Author(s)}
+\affiliation{
+  \institution{Institution Name}
+  \city{City}
+  \country{Country}
+}
+\email{author@domain.edu}
+
+\input{reviewing}
+
+
+\begin{document}
+
+\begin{abstract}
+Your abstract text goes here. Keep it concise, focused on the core database or data management challenge, your approach, and key experimental findings.
+\end{abstract}
+
+%% CCS Concepts and Keywords (often required for final publication)
+\begin{CCSXML}
+
+   
+       10002951.10002952
+       Information systems~Data management systems
+       500
+   
+ 
+\end{CCSXML}
+
+\ccsdesc[500]{Information systems~Data management systems}
+
+\keywords{databases, query processing, distributed systems}
+
+\maketitle
+
+\section{Introduction}
+
+\section{Related Work}
+
+\section{Methodology}
+
+\subsection{Preliminaries}
+
+\subsection{Authority and Scope Completeness}
+\label{sec:authority}
+
+Dynamically integrating conjunctive sub-queries during federated query processing 
+in discovery-based querying at runtime is difficult due to the unbounded nature of
+the query execution. To show this, we first introduce a sufficient
+condition for correctly delegating conjunctive queries in the traditional federated case.
+Then we will show how deciding whether we can correctly delegate these queries in the
+discovery-based querying case is impossible when not all sources have been discovered.
+ 
+First we define our discovery-based federated query setting in 
+Definition~\ref{def:setting} and~\ref{def:reach}.
+
+\begin{definition}[Discovery setting]
+\label{def:setting}
+A \emph{discovery setting} is a tuple
+$W = \langle \Du, \dataf, \Dd_0, \disc \rangle$: a universe of sources $\Du$, a map
+$\dataf : \Du \to 2^{\Tt}$ giving the graph each one holds, a set of seeds
+$\Dd_0 \subseteq \Du$, and a \emph{discovery function} $\disc$ assigning to every BGP $B$
+a map $\disc_B : \Du \times 2^{\Tt} \to 2^{\Du}$, where $\disc_B(d, \dataf(d))$ are the
+sources that a retrieved $d$ exposes while $B$ is evaluated.
+\end{definition}
+
+\begin{definition}[Reachable set, reference answer]
+\label{def:reach}
+Iterating discovery from the seeds, let
+$\Dd_{i+1} := \Dd_i \cup \bigcup_{d \in \Dd_i} \disc_B\bigl(d, \dataf(d)\bigr)$. The
+\emph{reachable set} is $\reach_B(W) := \bigcup_{i \geq 0} \Dd_i$, and the
+\emph{reference answer} to $B$ is $\ev{B}{G_{\reach_B(W)}}$. Correctness of a delegation
+is always measured against this reference answer, never against the universe $\Du$:
+sources that are never reached cannot contribute to it.
+\end{definition}
+
+\noindent
+
+Given this definition, we recover the traditional federated query processing setting,
+in which all sources are known beforehand, by taking $\Dd_0 = \Dd$ 
+and $\disc_B \equiv \emptyset$.
+
+Next we define an operator to determine the \emph{relevance} of a source for a query
+execution setting. Relevance records, for each triple pattern and each source, whether
+that source produces matches. An example of such an operator is the usage of \textsf{ASK}
+queries to determine exclusive groups in FedX~\cite{schwarte2011fedx}.
+
+\begin{definition}[Source relevance]
+\label{def:relevance}
+Fix a setting $W$ and a BGP $B$, and write $\Dd := \reach_B(W)$ for its reachable set;
+all that follows is relative to $\Dd$. Let $\mathcal{P}$ be the set of triple patterns.
+We write $\llbracket t \rrbracket_{d}$ for the evaluation of a triple
+pattern $t$ over the data of source $d$. The \emph{relevance indicator}
+$\Delta : \mathcal{P} \times \Dd \to \{0,1\}$ is
+\[
+  \Delta(t, d) \;=\;
+  \begin{cases}
+    1, & \text{if } \llbracket t \rrbracket_{d} \neq \emptyset, \\[2pt]
+    0, & \text{otherwise,}
+  \end{cases}
+\]
+and $\Dd_t := \{\, d \in \Dd \mid \Delta(t,d) = 1 \,\}$ denotes the
+\emph{relevant sources} of $t$.
+\end{definition}
+
+Thus, relevance means that a data source returns answers for a given triple pattern.
+Next, we introduce a definition of \emph{correct} delegation of conjunctive queries to a
+set of sources.
+
+\begin{definition}[Delegation]
+\label{def:delegation}
+Let $B$ be a BGP, $B' \subseteq B$ the delegated fragment, and $S \subseteq \Dd$ the
+(only) sources to which $B'$ is sent as a single conjunctive request, where as in
+Definition~\ref{def:relevance}, $\Dd = \reach_B(W)$. Write
+$G_A := \bigcup_{d \in A} \dataf(d)$ for $A \subseteq \Dd$. The delegated plan obtains for $B'$
+\[
+  R \;:=\; \Big( \bigcup_{d \in S} \ev{B'}{\dataf(d)} \Big)
+           \;\cup\; \ev{B'}{G_{\Dd \setminus S}},
+\]
+and the delegation is \emph{correct} if
+\[
+  R \;\bowtie\; \ev{B \setminus B'}{G_{\Dd}} \;=\; \ev{B}{G_{\Dd}} .
+\]
+\end{definition}
+
+This definition follows some of the definitions of federation of FedQPL~\cite{cheng2020fedqpl}.
+Next we show the requirements needed to correctly delegate conjuctive (sub)-queries to federated
+sources.
+
+\begin{theorem}[Correct delegation]
+  \label{th:correct-delegation}
+    Let $W$ be a \emph{federated} setting, that is $\disc_B \equiv \emptyset$, so that
+    $\Dd = \reach_B(W) = \Dd_0$ is known in advance.
+    Let $t_{1}, \dots, t_{n}$ be a set of triple patterns forming a BGP $B$, 
+    $B' \subseteq B$ a sub-BGP, and let $d \in \Dd$. 
+    For $d$ we define $\Dd^{\prime} = \Dd \setminus \{d\}$
+    the set containing all other sources. 
+    Then we can correctly delegate $B^{\prime}$ to $d$ if
+    $\bigcup_{t_i \in B^{\prime}}
+    \{\, d^{\prime} \in \Dd^{\prime} \mid \Delta(t_i, d^{\prime}) = 1 \,\} = \emptyset$
+\end{theorem}
+\begin{proof}
+We prove the special case of Definition~\ref{def:delegation} with $S = \{d\}$, so that
+$\Dd \setminus S = \Dd^{\prime}$. We assume $B^{\prime} \neq \emptyset$ and that distinct
+sources use disjoint sets of blank nodes.
+
+The argument rests on the fact that a \emph{single} triple pattern distributes over a
+union of sources: for every $t$ and every $A \subseteq \Dd$,
+\begin{equation}
+  \ev{t}{G_{A}} \;=\; \bigcup_{e \in A} \ev{t}{\dataf(e)},
+  \label{eq:distrib}
+\end{equation}
+since matching one pattern involves no join. Note that \eqref{eq:distrib} fails for BGPs,
+which is exactly what makes delegation non-trivial.
+
+By hypothesis no source other than $d$ is relevant to any pattern of $B^{\prime}$, so
+Definition~\ref{def:relevance} gives
+\begin{equation}
+  \ev{t^{\prime}}{\dataf(d^{\prime})} = \emptyset
+  \quad \text{for all } t^{\prime} \in B^{\prime},\ d^{\prime} \in \Dd^{\prime}.
+  \label{eq:empty}
+\end{equation}
+
+\emph{Step 1.} A BGP is the join of its patterns, and each pattern distributes over the
+sources by \eqref{eq:distrib}:
+\[
+  \ev{B}{G_{\Dd}}
+  \;=\; \bigjoin_{t \in B} \ev{t}{G_{\Dd}}
+  \;=\; \bigjoin_{t \in B} \ \bigcup_{e \in \Dd} \ev{t}{\dataf(e)} .
+\]
+
+\emph{Step 2.} Since $\bowtie$ is associative and commutative, the delegated fragment
+splits off:
+\[
+  \ev{B}{G_{\Dd}} \;=\;
+  \Bigl( \bigjoin_{t^{\prime} \in B^{\prime}} \bigcup_{e \in \Dd}
+         \ev{t^{\prime}}{\dataf(e)} \Bigr)
+  \bowtie \ev{B \setminus B^{\prime}}{G_{\Dd}} .
+\]
+
+\emph{Step 3.} As $\Dd = \Dd^{\prime} \uplus \{d\}$, the inner union splits, and by
+\eqref{eq:empty} its $\Dd^{\prime}$ part is empty:
+\[
+  \bigcup_{e \in \Dd} \ev{t^{\prime}}{\dataf(e)}
+  \;=\; \underbrace{\bigcup_{d^{\prime} \in \Dd^{\prime}}
+        \ev{t^{\prime}}{\dataf(d^{\prime})}}_{=\,\emptyset}
+        \;\cup\; \ev{t^{\prime}}{\dataf(d)}
+  \;=\; \ev{t^{\prime}}{\dataf(d)} .
+\]
+Substituting into Step 2 and reassembling the join,
+\begin{equation}
+  \ev{B}{G_{\Dd}} \;=\;
+  \ev{B^{\prime}}{\dataf(d)} \bowtie \ev{B \setminus B^{\prime}}{G_{\Dd}} .
+  \label{eq:ref}
+\end{equation}
+
+\emph{Step 4.} It remains to identify $R$ from Definition~\ref{def:delegation}. Its
+second term vanishes, again by \eqref{eq:distrib} and \eqref{eq:empty} and using
+$B^{\prime} \neq \emptyset$:
+\[
+  \ev{B^{\prime}}{G_{\Dd \setminus S}}
+  \;=\; \bigjoin_{t^{\prime} \in B^{\prime}} \ \bigcup_{d^{\prime} \in \Dd^{\prime}}
+        \ev{t^{\prime}}{\dataf(d^{\prime})}
+  \;=\; \bigjoin_{t^{\prime} \in B^{\prime}} \emptyset
+  \;=\; \emptyset .
+\]
+With $S = \{d\}$ the first term of $R$ is the single request to $d$, so
+$R = \ev{B^{\prime}}{\dataf(d)} \cup \emptyset = \ev{B^{\prime}}{\dataf(d)}$.
+
+\emph{Conclusion.} Substituting $R$ into \eqref{eq:ref},
+\[
+  R \bowtie \ev{B \setminus B^{\prime}}{G_{\Dd}} \;=\; \ev{B}{G_{\Dd}},
+\]
+which is the correctness condition of Definition~\ref{def:delegation}.
+\end{proof}
+
+Theorem~\ref{th:correct-delegation} gives us a sufficient condition for delegating 
+conjuctive sub-queries in the case where all sources $\Dd$ are known. However, in discovery-based
+querying the sources are discovered at runtime, goverened by some discovery process which returns
+during the query execution. As such, determining if we can correctly delegate depends on the
+\emph{state} of the discovery process, which is defined in Definition~\ref{def:discovery-state}.
+
+\begin{definition}[Discovery state]
+  \label{def:discovery-state}
+  The state of a discovery setting $W = \langle \Du, \dataf, \Dd_0, \disc \rangle$ at
+  time $T$ is the tuple
+  \[
+    W(T) \;=\; \langle \Du, \dataf, \Dd_0, \disc, \Dd_{d}(T) \rangle,
+  \]
+  the setting $W$ augmented with $\Dd_d(T)$, the set of sources that $\dataf$ has been
+  called on by time $T$, subject to
+  \[
+    \Dd_0 \;\subseteq\; \Dd_d(T) \;\subseteq\; \Dd_d(T') \;\subseteq\; \reach_B(W)
+    \qquad \text{for all } T \leq T',
+  \]
+  i.e.\ the seeds are discovered from the start, discovery only ever adds sources, and
+  it never adds one outside what $\disc$ can reach. For any given $W(T)$ the discovery
+  \emph{frontier} is
+  \[
+    F(T) \;=\; \Bigl( \bigcup_{d_f \in \Dd_d(T)} \disc\bigl(d_f, \dataf(d_f)\bigr) \Bigr)
+                \setminus \Dd_d(T),
+  \]
+  the sources that are discovered but do not yet have $\dataf$ called on them.
+  Discovery is complete when $F(T) = \emptyset$.
+\end{definition}
+
+\todo{Do we mention $\Delta$ still? Stranded paragraph possibly}
+At any given moment in time $T$, where discovery has not yet terminated ($ \Dd^\prime(T) \subset \Dd $ ),
+where $\Dd^\prime(T)$ the set of discovered sources at time $t$,
+exclusivity of data sources for set of triple patterns $t_{1} \dots t_{n}$ cannot be determined
+when $\Delta(t_n, d)$ only exists as a relevance discription for \emph{single} sources.
+
+\begin{definition}[Observationally equivalent states]
+  \label{def:obs-equiv}
+  A discovery state $W(T)$ records the whole world, but a query engine at time $T$ has
+  access only to the \emph{observation}
+  \[
+    O(T) \;=\; \bigl\langle\, \Dd_{d}(T),\; \dataf|_{\Dd_{d}(T)} \,\bigr\rangle,
+  \]
+  the sources it has retrieved together with their contents. 
+  Two states $W_1(T)$ and $W_2(T)$ are \emph{observationally equivalent}, written
+  $W_1(T) \sim W_2(T)$, when $O_1(T) = O_2(T)$. Note that $F(T)$ is computable from
+  $O(T)$ and $\disc$: the extent of the frontier is observable, its contents are not.
+\end{definition}
+
+\begin{theorem}[Correct delegation is undetermined under incomplete discovery]
+  \label{th:undetermined}
+  Let $W(T)$ be a discovery state for which $F(T) \neq \emptyset$. Then there exist a
+  BGP $B$, a sub-BGP $B^{\prime} \subseteq B$, a set of sources
+  $S \subseteq \Dd_{d}(T)$, and two states $W_1(T)$ and $W_2(T)$, both observationally
+  equivalent to $W(T)$, such that $B^{\prime}$ is correctly delegated to $S$ in $W_1(T)$
+  but not in $W_2(T)$. Since the engine's input is $O(T)$ and all three states share it,
+  no procedure can decide whether the delegation is correct.
+\end{theorem}
+
+\begin{corollary}[Delegation requires complete discovery]
+  \label{cor:complete-discovery}
+  Correct delegation of $B^{\prime}$ to $S$ is decidable at time $T$ exactly when
+  $F(T) = \emptyset$, that is, when every source of $\reach_B(W)$ has been retrieved.
+\end{corollary}
+
+\begin{proof}
+  This requires showing for a g
+\end{proof}
+
+From Corollary~\ref{cor:complete-discovery}, we find that the problem of runtime federation
+in discovery-based querying is impossible untill all sources are discovered. Depending
+on the number of sources, which is potentially thousands~\todo{cite here}, this is infeasible.
+
+To solve this, we introduce a semantic assumption on what data is considered
+relevant to our query execution. We call this the authoritativenss declaration assumption.
+In this assumption, we \todo{Explain}. This combines both \emph{authority} 
+who may make statements about a term and \emph{completeness} \todo{Explain}
+
+This assumption is intuitive because \todo{Explain intuition with example}
+
+Formally, we get:
+
+
+
+% Our central assumption is that a data access interface may \emph{declare} that it
+% speaks for part of the Web, and that a query engine may take that declaration at its
+% word. The Linked Data literature separates two ingredients of such a declaration, and
+% we keep them separate because they have different logical status and different
+% verification stories.
+
+% \emph{Authority} is the question of \emph{who may speak} about a term. Following the
+% Linked Data principles, the document obtained by dereferencing an IRI is the
+% distinguished source of statements about that IRI. \citet{hogan2009authoritative}
+% made this operational to prevent \emph{ontology hijacking}, and
+% \citet{harth2012completeness} generalised it into a lattice of \emph{authority types}
+% that record whether a triple was retrieved from the document of its subject, its
+% predicate, or its object. Authority is a \emph{filter}: it discards data, and it is
+% chosen by the consumer.
+
+% \emph{Completeness} is the question of \emph{what is guaranteed to be present}. In the
+% relational setting this is Motro's split of a source into an available and an ideal
+% instance~\cite{motro1989integrity}, and Levy's local completeness
+% statements~\cite{levy1996complete,razniewski2011completeness};
+% \citet{darari2013completeness,darari2018management} transported it to RDF as
+% statements $\mathrm{Compl}(P_1 \mid P_2)$ asserting that a source holds every ideal
+% answer to $P_1$ under condition $P_2$. Completeness is an \emph{obligation}: it adds
+% nothing to the data, and it is undertaken by the publisher.
+
+% Neither ingredient alone licenses what we need. Authority alone does not let us skip a
+% source; completeness alone does not let us disregard the statements other sources make
+% about the same subjects. Their conjunction does, and we make that conjunction the one
+% assumption on which the rest of the paper rests.
+
+% \subsubsection{Data model}
+
+% We use the standard model of a Web of Linked Data~\cite{hartig2012foundations},
+% refined with partial documents as in~\cite{bogaerts2021subweb}. Let $\mathcal{U}$,
+% $\mathcal{B}$ and $\mathcal{L}$ be the pairwise disjoint sets of IRIs, blank nodes and
+% literals, and $\Tt = (\mathcal{U} \cup \mathcal{B}) \times \mathcal{U} \times
+% (\mathcal{U} \cup \mathcal{B} \cup \mathcal{L})$ the set of triples. A \emph{Web of
+% Linked Data} (WoLD) is a tuple $W = \langle D, \mathsf{data}, \mathsf{adoc} \rangle$
+% with $D$ a countable set of documents, $\mathsf{data} : D \to 2^{\Tt}$ mapping
+% each document to a finite graph, and $\mathsf{adoc} : \mathcal{U} \rightharpoonup D$
+% the partial dereferencing function. We write $\mathsf{AllData}(W) = \bigcup_{d \in D}
+% \mathsf{data}(d)$, and $G|_S = \{ (s,p,o) \in G \mid s \in S \}$ for the restriction
+% of a graph to subjects drawn from $S \subseteq \mathcal{U}$.
+
+% An \emph{interface} $c$ is a pair $\langle u_c, \mathsf{data}(c) \rangle$ of a URI and
+% the graph it answers over. Documents are the degenerate case; composite resources,
+% SPARQL endpoints and Triple Pattern Fragments servers differ only in the query
+% language they accept, which we treat in \S\ref{sec:delegation}.
+
+% \subsubsection{Scopes and scope claims}
+
+% \begin{definition}[Scope]
+% \label{def:scope}
+% A \emph{scope} is a set $S \subseteq \mathcal{U}$ of IRIs, given by a finite,
+% decidable description.
+% \end{definition}
+
+% Nothing below depends on how a scope is described, only on the fact that membership is
+% decidable without a network request. Our canonical instance is the \emph{URI space}:
+% for a namespace $N \in \mathcal{U}$ we write $S_N = \{u \in \mathcal{U} \mid N
+% \text{ is a prefix of } u\}$. This is precisely \texttt{void:uriSpace}, and its
+% regular-expression generalisation \texttt{void:uriRegexPattern}, from the VoID
+% vocabulary~\cite{alexander2011void}; it is also the granularity at which
+% \citet{saleem2014hibiscus} index URI authorities for source selection. Scopes
+% described by a SHACL shape or by a class extent fit Definition~\ref{def:scope} equally
+% well, at the cost of a membership test that is no longer a string operation.
+
+% \begin{definition}[Scope claim]
+% \label{def:claim}
+% A \emph{scope claim} is a pair $\langle c, S \rangle$ asserting that interface $c$
+% speaks for scope $S$.
+% \end{definition}
+
+% A claim is worthless if anyone may make it: an interface at
+% \texttt{https://evil.example/} claiming $S_{\texttt{http://dbpedia.org/resource/}}$
+% would silently truncate every query that touches DBpedia. We therefore ground
+% admissibility in the same dereference mechanism that grounds authority
+% in~\cite{hogan2009authoritative}.
+
+% \begin{definition}[Admissibility]
+% \label{def:admissible}
+% A claim $\langle c, S_N \rangle$ is \emph{admissible} in $W$ if
+% $\mathsf{adoc}(N)$ is defined and the claim occurs in
+% $\mathsf{data}(\mathsf{adoc}(N))$, or is reachable from it by a chain of
+% delegations each of which is itself published in the document of the delegating
+% namespace. We write $\mathcal{C}$ for a set of pairwise scope-disjoint admissible
+% claims.
+% \end{definition}
+
+% Admissibility costs at most one extra lookup, and in the common case costs none: when
+% $u_c \in S_N$ the claim is self-hosted and the interface is discovered by
+% dereferencing $N$ anyway. Requiring pairwise disjointness of scopes in $\mathcal{C}$
+% is a simplification we revisit in Remark~\ref{rem:overlap}.
+
+% \subsubsection{The assumption}
+
+% \begin{definition}[Authoritative view]
+% \label{def:authview}
+% Let $\mathcal{C}$ be a set of admissible claims for $W$. The \emph{authoritative view}
+% $W^{\mathcal{C}}$ is the subweb $\langle D, \mathsf{data}^{\mathcal{C}},
+% \mathsf{adoc} \rangle$ of $W$ with
+% \[
+%   \mathsf{data}^{\mathcal{C}}(d) \;=\; \mathsf{data}(d) \setminus
+%   \bigcup_{\langle c, S\rangle \in \mathcal{C},\; d \neq \mathsf{adoc}(u_c)}
+%   \mathsf{data}(d)|_{S}.
+% \]
+% \end{definition}
+
+% \begin{assumption}[Authority]
+% \label{as:authority}
+% Query answers are defined relative to $W^{\mathcal{C}}$ rather than $W$.
+% \end{assumption}
+
+% Assumption~\ref{as:authority} is a choice of semantics, not a claim about the world.
+% This matters. Stating instead that triples with subject in $S$ \emph{do not occur}
+% outside $c$ would be an empirical claim about the whole Web, false by construction --
+% on an open Web anyone may say anything about anything -- and unverifiable by any
+% engine, since no engine can enumerate the Web. Making the assumption semantic sidesteps
+% both problems, and places it in the same tradition as reachability-based
+% $c$-semantics~\cite{hartig2012foundations}, LDQL~\cite{hartig2015ldql} and subweb
+% specifications~\cite{bogaerts2021subweb}, all of which define answers relative to a
+% declared portion of the Web. It is also the only defensible reading of the intuition
+% behind the assumption: that a pod representing a person should be believed about that
+% person, and that a third party's unilateral claims about them should not enter the
+% answer. Because $W^{\mathcal{C}}$ is a subweb of $W$, answers under
+% Assumption~\ref{as:authority} are sound with respect to $W$ by construction.
+
+% \begin{lemma}[Scope exclusivity]
+% \label{lem:exclusive}
+% For every admissible $\langle c, S \rangle \in \mathcal{C}$,
+% $\mathsf{AllData}(W^{\mathcal{C}})|_{S} = \mathsf{data}(c)|_{S}$.
+% \end{lemma}
+
+% \begin{proof}
+% Immediate from Definition~\ref{def:authview}: every document other than $c$'s has its
+% $S$-subject triples removed, and $c$'s are retained.
+% \end{proof}
+
+% Lemma~\ref{lem:exclusive} is the property we actually use. In $W^{\mathcal{C}}$ the
+% interface $c$ is the \emph{unique relevant source} for subjects in $S$, which is the
+% precondition under which \citet{schwarte2011fedx} form exclusive groups and ship them
+% whole to a single endpoint. Note that the lemma is a theorem, not a hypothesis: in a
+% world filtered by Assumption~\ref{as:authority}, scope completeness comes for free.
+% The only remaining hypothesis is local to the publisher.
+
+% \begin{assumption}[Interface completeness]
+% \label{as:iface}
+% An interface $c$ evaluates its declared fragment over the whole of
+% $\mathsf{data}(c)$; that is, $c$ has in fact aggregated the sources it claims to
+% aggregate.
+% \end{assumption}
+
+% Assumption~\ref{as:iface} is the one empirical obligation in the framework, and it is
+% deliberately the publisher's: $c$ is the only party with the access rights and the
+% inventory needed to discharge it. In Darari et al.'s
+% notation~\cite{darari2013completeness} it is the statement
+% \(
+%   \mathrm{Compl}\big((?s,?p,?o) \mid \textsc{filter}\,\mathrm{strStarts}(\mathrm{str}(?s), N)\big)
+% \)
+% indexed by $c$, which is why we can reuse their entailment machinery when reasoning
+% about combinations of claims. Viewed from the database side it says the interface's
+% view is \emph{exact} rather than merely sound, in the sense of the
+% answering-queries-using-views literature~\cite{halevy2001views,abiteboul1998views};
+% exactness is precisely what permits pruning the remaining sources, whereas soundness
+% alone permits only adding them.
+
+% \subsubsection{From exclusivity to delegation}
+% \label{sec:delegation}
+
+% Lemma~\ref{lem:exclusive} governs individual subjects. Delegating a conjunctive query
+% requires that \emph{every} triple pattern shipped to $c$ binds its subject inside $S$;
+% otherwise $c$ answers only part of the pattern and we lose completeness silently. This
+% is exactly the condition \citet{harth2012completeness} identify: under subject
+% authority a pattern is completely answerable only if its subject is bound by a
+% constant, or by a variable that another completely answerable pattern binds.
+
+% \begin{definition}[$S$-groundedness]
+% \label{def:grounded}
+% A BGP $B$ is \emph{$S$-grounded} if for every $W$, every $\mu \in \llbracket B
+% \rrbracket_{W^{\mathcal{C}}}$ and every $tp \in B$, $\mu(\mathrm{subj}(tp)) \in S$.
+% \end{definition}
+
+% \begin{theorem}[Safe delegation]
+% \label{thm:delegation}
+% Let $\langle c, S \rangle \in \mathcal{C}$ be admissible, let
+% Assumption~\ref{as:iface} hold for $c$, and let $B' \subseteq B$ be $S$-grounded.
+% Then $\llbracket B' \rrbracket_{\mathsf{data}(c)} = \llbracket B'
+% \rrbracket_{W^{\mathcal{C}}}$.
+% \end{theorem}
+
+% Theorem~\ref{thm:delegation} is what makes $B'$ an exclusive group: it may be shipped
+% to $c$ in one request, and no other interface need be consulted for it.
+
+% Deciding $S$-groundedness syntactically needs one further declaration, and this is
+% where the running example of a composite resource over a path
+% \[
+%   tp_1 = {?s}\ \langle p_1\rangle\ {?o_1}, \qquad
+%   tp_2 = {?o_1}\ \langle p_2\rangle\ {?o_2}
+% \]
+% becomes delicate. A subject-scope claim on $S$ says nothing about where the objects of
+% $p_1$ live, so $\{tp_1, tp_2\}$ is \emph{not} $S$-grounded merely because
+% $?s$ ranges over $S$: a binding of $?o_1$ may leave the scope, and $tp_2$ would then be
+% answered incompletely by $c$. We close the gap with a closure declaration.
+
+% \begin{definition}[Scope closure]
+% \label{def:closure}
+% An interface $c$ with scope $S$ declares predicate $p$ \emph{scope-closed} if for
+% every $(s,p,o) \in \mathsf{AllData}(W^{\mathcal{C}})$ with $s \in S$ it holds that
+% $o \in S$.
+% \end{definition}
+
+% \begin{lemma}
+% \label{lem:syntactic}
+% $B$ is $S$-grounded if every $tp \in B$ has a subject that is either a constant in
+% $S$, or a variable occurring in the object position of some $tp' \in B$ whose
+% predicate is scope-closed for $S$ and whose subject is itself $S$-grounded.
+% \end{lemma}
+
+% Under Lemma~\ref{lem:syntactic}, the path above is delegable exactly when $c$ declares
+% $p_1$ scope-closed --- which, for a pod, is the ordinary case for containment and
+% membership predicates, since the contents of a storage share its URI space. Closure
+% declarations are the same kind of publisher-supplied structural knowledge that
+% \citet{taelman2023structural} exploit for LTQP over Solid and that shape-based
+% optimisation~\cite{taelman2024shapes} derives from SHACL; we differ only in using them
+% to justify \emph{omitting} requests rather than to prioritise them. An interface that
+% cannot declare closure is not excluded from the framework: it simply offers a smaller
+% delegable fragment, and the planner of \S\ref{sec:planning} falls back to traversal for
+% the remainder.
+
+% More generally, nothing forces a scope claim to be the only thing an interface
+% advertises. An interface may publish an arbitrary completeness statement
+% $\mathrm{Compl}(P_1 \mid P_2)$~\cite{darari2013completeness}, of which the
+% subject-scope claim is the special case $P_1 = (?s,?p,?o)$ under a URI-space filter and
+% $P_2 = \emptyset$, and Theorem~\ref{thm:delegation} generalises to sub-BGPs subsumed by
+% $P_1$ under $P_2$. We develop the scoped case because it is cheap to publish, cheap to
+% check, and self-verifying through dereference; the general case is the natural
+% extension point.
+
+% \subsubsection{Remarks}
+
+% \begin{remark}[Subject authority is a choice]
+% We instantiate \citeauthor{harth2012completeness}'s authority lattice at the
+% $s$-auth point. This matches entity-centric decentralisation, where the unit of
+% publication and of access control is the entity, and it is the only authority type
+% that makes namespace scoping meaningful for a single interface. Predicate and object
+% authority remain available and would change only Definition~\ref{def:authview}.
+% \end{remark}
+
+% \begin{remark}[Blank nodes and literals]
+% $G|_S$ retains only triples with IRI subjects. Triples with blank-node subjects are
+% not covered by any scope; we treat them as document-scoped and exclude them from
+% delegation, which is sound because they cannot be referred to from outside their
+% document.
+% \end{remark}
+
+% \begin{remark}[Overlapping scopes]
+% \label{rem:overlap}
+% URI-space scopes form a forest under prefix containment, so two admissible claims are
+% either disjoint or nested. We adopt the most-specific-claim rule: the interface with
+% the longest matching prefix wins, and Definition~\ref{def:authview} filters against
+% that interface only. Genuinely overlapping non-prefix scopes would break
+% Lemma~\ref{lem:exclusive}; the planner detects this at claim-collection time and
+% degrades to the union of the candidate interfaces, which costs recall nothing and
+% pruning everything.
+% \end{remark}
+
+% \begin{remark}[What we do not assume]
+% We do not assume the Web is closed, that scope claims are truthful about the world, or
+% that an engine can enumerate the sources speaking about a subject. We assume only that
+% a claim is admissible (Definition~\ref{def:admissible}), that the consumer elects to
+% honour it (Assumption~\ref{as:authority}), and that the publisher meets its own
+% declaration (Assumption~\ref{as:iface}). A consumer who distrusts a publisher may
+% discard its claims and recover traversal semantics, exactly as a querying agent may
+% decline a subweb specification in~\cite{bogaerts2021subweb}.
+% \end{remark}
+
+\subsection{Delegating Conjuctive Queries}
+Under this query execution model, we can now investigate delegating queries to composite sources 
+when our model allows determining \emph{correct} delegation under \emph{incomplete} discovery.
+
+\subsection{Adaptive Query Planning with Composite Sources}
+Given the capability of delegating these sub queries, we must now move to the system-side of
+our problem. Specifically, due to the dynamic discovery of composite sources and the uncertainty
+of capabilities of these sources, using a static query plan is difficult.
+
+\todo{Example showing how we can't integrate a sub-query if we have a static plan}
+
+\todo{Show that even if we use many alternative plans we can still run into issues with overlapping
+composite sources}
+
+\todo{Stems!}
+\label{sec:planning}
+
+\subsection{Correctness}
+
+\subsubsection{Overlapping Sources}
+Correctness when doing overlapping sources is difficult blabla, cases: Overlapping domain,
+overlapping triple patterns, both, neither.
+Given the time dimension, how do we decide what is possible
+
+\subsection{Discovery}
+
+\section{System Application}
+To evaluate the performance impact of delegating sub-queries we implement 
+hybrid federated link traversal-based query processing. Specifically, within solid blabla
+
+Note this is a concrete application of the stuff introduced here, which is not limited to Solid
+and link traversal.
+
+
+\section{Evaluation}
+
+\section{Conclusion}
+Summarize results and point to future work.
+
+%% Bibliography
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references/references}
+
+
+%% ---------------------------------------------------------------
+%% Superseded draft of the authoritativeness subsection, kept for reference.
+%% ---------------------------------------------------------------
+% \subsection{Authoritativeness}
+% This is a working draft copy output. This needs to be better aligned with literature
+% on authoritativeness and with justification. This will be the core assumption we build our theory on:
+% 
+% 
+% Let Pod $A$ expose a composite resource $CR$ whose query is the path
+% \[
+% tp_1 = {?s}\ \langle p_1\rangle\ {?o_1}, \qquad
+% tp_2 = {?o_1}\ \langle p_2\rangle\ {?o_2}.
+% \]
+% 
+% A composite resource does not answer for the whole web, nor necessarily for the whole
+% pod that publishes it. What it answers for is a parameter of the resource, and the entire
+% development below is relative to it.
+% 
+% \begin{definition}[Authority scope]
+% A composite resource $CR$ declares an \emph{authority scope} $S$, a set of RDF terms. We
+% write $t \in CR$ for $t \in S$.
+% \end{definition}
+% 
+% \begin{assumption}[Scope completeness]
+% \label{as:scope}
+% Every triple whose subject lies in $S$ belongs to the dataset over which $CR$ evaluates
+% its query.
+% \end{assumption}
+% 
+% Paste two: 
+% \textbf{The ``Authoritative'' Assumption}
+% We posit that a given source, with possible sub-sources in a decentralized environment is the authoritative source \textit{only} for subjects that share that source's base URL.
+% Let $P$ be a source with a base URL $U_P$. Let $R_D$ be a derived resource obtained from $P$.
+% The constraint for authoritative data is defined as:
+% \begin{equation}
+%     \forall t \in R_D, \quad \text{Authoritative}(t) \iff \text{subject}(t) \text{ startsWith } U_P
+% \end{equation}
+% 
+% In the context of Solid, an example decentralized environment this assumption is logical. If a pod represents a person, then accepting statements about this person only in their own pod is common sense. My pod could claim to be friends with the Pope, however if the Pope does not also make this statement it is probably false.
+% Future work could investigate the use of authoritativeness claims, where one data source indicates which other sources are authoritative, however this would again complicate establishing exclusive groups and would require standardization efforts.
+% 
+% 
+% Delegating conjunctive sub-queries with more than one triple pattern requires
+
+\end{document}
