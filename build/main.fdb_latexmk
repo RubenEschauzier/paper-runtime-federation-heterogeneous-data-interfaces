@@ -1,15 +1,15 @@
 # Fdb version 4
-["bibtex build/main"] 1789677864.29489 "build/main.aux" "build/main.bbl" "build/main" 1789677868.54836 0
+["bibtex build/main"] 1789723346.58367 "build/main.aux" "build/main.bbl" "build/main" 1789723347.63636 0
   "./ACM-Reference-Format.bst" 1786901164 94292 6c9c536013d461258ea4a4813fe90aa8 ""
   "./references/references.bib" 1789562009.96413 8466 6d4138b61b5514744cccfe2169f2dcad ""
-  "build/main.aux" 1789677868.28372 3549 848d75fc31d202aaa2725f6b7bb580dd "pdflatex"
+  "build/main.aux" 1789723347.36223 3640 33ef88228fd1785eb402d06fce7a4c15 "pdflatex"
   (generated)
   "build/main.bbl"
   "build/main.blg"
   (rewritten before read)
-["pdflatex"] 1789677867.63388 "/home/ruben-eschauzier/projects/papers/federation-of-heterogeneous-data-interfaces/main.tex" "build/main.pdf" "main" 1789677868.5485 0
+["pdflatex"] 1789723346.69235 "/home/ruben-eschauzier/projects/papers/federation-of-heterogeneous-data-interfaces/main.tex" "build/main.pdf" "main" 1789723347.63651 0
   "/etc/texmf/web2c/texmf.cnf" 1776157125.05128 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/ruben-eschauzier/projects/papers/federation-of-heterogeneous-data-interfaces/main.tex" 1789677867.47107 32822 5de83bac436c74a4d211f5810781c872 ""
+  "/home/ruben-eschauzier/projects/papers/federation-of-heterogeneous-data-interfaces/main.tex" 1789723346.43125 38418 ce19d8e3c00e4abff456eff102f85fb3 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_25tcsq.enc" 1490131464 2921 8ca0eb0831f9bc5da080d3697cfe67bf ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_76gpa5.enc" 1490131464 2933 9ad527ce78d7c5fa0a642dead095f172 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_7grukw.enc" 1490131464 2934 a4a9158faed2e9e89c771b4e3b7fc12f ""
@@ -240,10 +240,10 @@
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1776158142.32945 5472669 54eaf61a88b6b7896ebd0dac973cb29c ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1776158218 8215736 0d237488e1a468e7958fd6142b453959 ""
   "acmart.cls" 1786907154 121874 ab3e7308484eb2be849a0198603b06c5 ""
-  "build/main.aux" 1789677868.28372 3549 848d75fc31d202aaa2725f6b7bb580dd "pdflatex"
-  "build/main.bbl" 1789677864.36406 3259 a4afc4be18cca3f54df7e8afb242dc48 "bibtex build/main"
-  "build/main.out" 1789677868.28444 2100 7163d17d07b40c90fd60d6da86f551bc "pdflatex"
-  "main.tex" 1789677867.47107 32822 5de83bac436c74a4d211f5810781c872 ""
+  "build/main.aux" 1789723347.36223 3640 33ef88228fd1785eb402d06fce7a4c15 "pdflatex"
+  "build/main.bbl" 1789723346.67924 3259 a4afc4be18cca3f54df7e8afb242dc48 "bibtex build/main"
+  "build/main.out" 1789723347.36223 2100 7163d17d07b40c90fd60d6da86f551bc "pdflatex"
+  "main.tex" 1789723346.43125 38418 ce19d8e3c00e4abff456eff102f85fb3 ""
   "reviewing.tex" 1789552718.0583 980 d51272bd43b3bc8006ca62ad1404a4e2 ""
   (generated)
   "build/main.aux"

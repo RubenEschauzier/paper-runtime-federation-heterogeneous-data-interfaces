@@ -117,7 +117,7 @@ sources that are never reached cannot contribute to it.
 \noindent
 
 Given this definition, we recover the traditional federated query processing setting,
-in which all sources are known beforehand, by taking $\Dd_0 = \Dd$ 
+in which all sources are known beforehand, by taking $\Dd_0 = \Du$ 
 and $\disc_B \equiv \emptyset$.
 
 Next we define an operator to determine the \emph{relevance} of a source for a query
@@ -164,8 +164,8 @@ and the delegation is \emph{correct} if
 \end{definition}
 
 This definition follows some of the definitions of federation of FedQPL~\cite{cheng2020fedqpl}.
-Next we show the requirements needed to correctly delegate conjuctive (sub)-queries to federated
-sources.
+Next we give a sufficient condition for correctly delegating conjunctive (sub)-queries to
+federated sources.
 
 \begin{theorem}[Correct delegation]
   \label{th:correct-delegation}
@@ -255,7 +255,7 @@ which is the correctness condition of Definition~\ref{def:delegation}.
 \end{proof}
 
 Theorem~\ref{th:correct-delegation} gives us a sufficient condition for delegating 
-conjuctive sub-queries in the case where all sources $\Dd$ are known. However, in discovery-based
+conjuctive sub-queries in the case where the reachable set $\Dd$ is known in advance. However, in discovery-based
 querying the sources are discovered at runtime, goverened by some discovery process which returns
 during the query execution. As such, determining if we can correctly delegate depends on the
 \emph{state} of the discovery process, which is defined in Definition~\ref{def:discovery-state}.
@@ -265,63 +265,187 @@ during the query execution. As such, determining if we can correctly delegate de
   The state of a discovery setting $W = \langle \Du, \dataf, \Dd_0, \disc \rangle$ at
   time $T$ is the tuple
   \[
-    W(T) \;=\; \langle \Du, \dataf, \Dd_0, \disc, \Dd_{d}(T) \rangle,
+    W(T) \;=\; \langle \Du, \dataf, \Dd_0, \disc, \Dd(T) \rangle,
   \]
-  the setting $W$ augmented with $\Dd_d(T)$, the set of sources that $\dataf$ has been
+  the setting $W$ augmented with $\Dd(T)$, the set of sources that $\dataf$ has been
   called on by time $T$, subject to
   \[
-    \Dd_0 \;\subseteq\; \Dd_d(T) \;\subseteq\; \Dd_d(T') \;\subseteq\; \reach_B(W)
+    \Dd_0 \;\subseteq\; \Dd(T) \;\subseteq\; \Dd(T') \;\subseteq\; \reach_B(W)
     \qquad \text{for all } T \leq T',
   \]
   i.e.\ the seeds are discovered from the start, discovery only ever adds sources, and
   it never adds one outside what $\disc$ can reach. For any given $W(T)$ the discovery
   \emph{frontier} is
   \[
-    F(T) \;=\; \Bigl( \bigcup_{d_f \in \Dd_d(T)} \disc\bigl(d_f, \dataf(d_f)\bigr) \Bigr)
-                \setminus \Dd_d(T),
+    F(T) \;=\; \Bigl( \bigcup_{d_f \in \Dd(T)} \disc\bigl(d_f, \dataf(d_f)\bigr) \Bigr)
+                \setminus \Dd(T),
   \]
   the sources that are discovered but do not yet have $\dataf$ called on them.
   Discovery is complete when $F(T) = \emptyset$.
 \end{definition}
 
-\todo{Do we mention $\Delta$ still? Stranded paragraph possibly}
-At any given moment in time $T$, where discovery has not yet terminated ($ \Dd^\prime(T) \subset \Dd $ ),
-where $\Dd^\prime(T)$ the set of discovered sources at time $t$,
-exclusivity of data sources for set of triple patterns $t_{1} \dots t_{n}$ cannot be determined
-when $\Delta(t_n, d)$ only exists as a relevance discription for \emph{single} sources.
+Next, we introduce the concept of an observation of an engine of the discovery state 
+in Definition~\ref{def:obs-equiv}, which
+denotes what the engine actually can \emph{know} about its discovery setting at given time $T$.
 
 \begin{definition}[Observationally equivalent states]
   \label{def:obs-equiv}
   A discovery state $W(T)$ records the whole world, but a query engine at time $T$ has
   access only to the \emph{observation}
   \[
-    O(T) \;=\; \bigl\langle\, \Dd_{d}(T),\; \dataf|_{\Dd_{d}(T)} \,\bigr\rangle,
+    O(T) \;=\; \bigl\langle\, \Dd(T),\; \dataf|_{\Dd(T)} \,\bigr\rangle,
   \]
   the sources it has retrieved together with their contents. 
   Two states $W_1(T)$ and $W_2(T)$ are \emph{observationally equivalent}, written
   $W_1(T) \sim W_2(T)$, when $O_1(T) = O_2(T)$. Note that $F(T)$ is computable from
-  $O(T)$ and $\disc$: the extent of the frontier is observable, its contents are not.
+  $O(T)$ and $\disc$: the extent of the frontier is observable, its contents are not. A
+  property of states is \emph{determined at $T$} when all states observationally
+  equivalent to $W(T)$ agree on it; an engine at time $T$ can establish a property only
+  if it is determined at $T$.
 \end{definition}
 
 \begin{theorem}[Correct delegation is undetermined under incomplete discovery]
   \label{th:undetermined}
   Let $W(T)$ be a discovery state for which $F(T) \neq \emptyset$. Then there exist a
   BGP $B$, a sub-BGP $B^{\prime} \subseteq B$, a set of sources
-  $S \subseteq \Dd_{d}(T)$, and two states $W_1(T)$ and $W_2(T)$, both observationally
+  $S \subseteq \Dd(T)$, and two states $W_1(T)$ and $W_2(T)$, both observationally
   equivalent to $W(T)$, such that $B^{\prime}$ is correctly delegated to $S$ in $W_1(T)$
   but not in $W_2(T)$. Since the engine's input is $O(T)$ and all three states share it,
   no procedure can decide whether the delegation is correct.
 \end{theorem}
 
+\begin{proof}
+  We construct two states $W_1(T)$ and $W_2(T)$, both observationally equivalent to
+  $W(T)$, in which $B^{\prime}$ is delegated to $S$ correctly and incorrectly
+  respectively. The two agree on $\Dd_0$, $\disc$ and $\Dd(T)$, and on $\dataf$ over
+  $\Dd(T)$; they differ only beyond the frontier, which is non-empty by hypothesis.
+
+  Take $\Dd(T) = S = \{d_1\}$ and
+  \[
+    B^{\prime} \;=\; B \;=\; \bigl\{\, (?s, p_1, ?o_1),\ (?s, p_2, ?o_2) \,\bigr\},
+  \]
+  \[
+    \dataf(d_1) \;=\; \bigl\{\, (s_1, p_1, o_1),\ (s_1, p_2, o_2),\ (s_2, p_1, o_3) \,\bigr\}.
+  \]
+  Fix some $d^{*} \in F(T)$, and let every reachable source other than $d_1$ and $d^{*}$
+  hold no data. The two states are then obtained by setting
+  \[
+    \dataf(d^{*}) \;=\;
+    \begin{cases}
+      \bigl\{\, (s_3, p_2, o_4) \,\bigr\} & \text{in } W_1(T), \\[2pt]
+      \bigl\{\, (s_2, p_2, o_4) \,\bigr\} & \text{in } W_2(T).
+    \end{cases}
+  \]
+  Since $d^{*} \notin \Dd(T)$, both states induce the same observation, and so
+  $W_1(T) \sim W_2(T) \sim W(T)$ holds. The reachable set differs between the two, so we
+  write $G_i$ for $G_{\reach_B(W_i)}$, the union of all data reachable in $W_i(T)$. As
+  only $d_1$ and $d^{*}$ hold data,
+  \[
+    G_1 = \dataf(d_1) \cup \bigl\{\, (s_3, p_2, o_4) \,\bigr\},
+    \qquad
+    G_2 = \dataf(d_1) \cup \bigl\{\, (s_2, p_2, o_4) \,\bigr\}.
+  \]
+
+  Write
+  \begin{align*}
+    \mu_1 &= \{?s \mapsto s_1,\ ?o_1 \mapsto o_1,\ ?o_2 \mapsto o_2\}, \\
+    \mu_2 &= \{?s \mapsto s_2,\ ?o_1 \mapsto o_3,\ ?o_2 \mapsto o_4\}.
+  \end{align*}
+  Neither added triple matches $(?s, p_1, ?o_1)$, so
+  $\ev{B^{\prime}}{\dataf(d^{*})} = \emptyset$ in both states. By
+  Definition~\ref{def:delegation} we therefore have
+  \[
+    R_1 \;=\; R_2 \;=\; \ev{B^{\prime}}{\dataf(d_1)} \;=\; \{\mu_1\}.
+  \]
+  Since $B \setminus B^{\prime} = \emptyset$ we have
+  $\ev{B \setminus B^{\prime}}{G_i} = \{\mu_\emptyset\}$, the join identity, so the
+  correctness condition reduces to $R_i = \ev{B}{G_i}$.
+
+  In $W_1(T)$ the added triple has subject $s_3$, which no $p_1$-triple mentions, so it
+  contributes no solution and
+  \[
+    \ev{B}{G_1} \;=\; \{\mu_1\} \;=\; R_1 :
+  \]
+  the delegation is correct. In $W_2(T)$ the added triple joins with
+  $(s_2, p_1, o_3) \in \dataf(d_1)$ on $?s$, so
+  \[
+    \ev{B}{G_2} \;=\; \{\mu_1, \mu_2\} \;\neq\; R_2 :
+  \]
+  the delegation is not correct.
+
+  The triple at $d^{*}$ yields no solution on its own, and $(s_2, p_1, o_3)$ yields none
+  within $d_1$; only their join does. A single conjunctive request to $d_1$ cannot produce
+  it, and neither can one to $d^{*}$, so the solution is lost precisely because the join
+  crosses the frontier. As $W_1(T)$ and $W_2(T)$ present the engine with the same
+  observation $O(T)$ while disagreeing on correctness, no procedure reading only $O(T)$
+  can decide it.
+\end{proof}
+
+
+\begin{lemma}[An empty frontier certifies complete discovery]
+  \label{lem:frontier}
+  $F(T) = \emptyset$ if and only if $\Dd(T) = \reach_B(W)$.
+\end{lemma}
+
+\begin{proof}
+  $(\Rightarrow)$ The inclusion $\Dd(T) \subseteq \reach_B(W)$ holds by
+  Definition~\ref{def:discovery-state}. For the converse, $F(T) = \emptyset$ says exactly
+  that
+  \[
+    \disc\bigl(d_f, \dataf(d_f)\bigr) \subseteq \Dd(T)
+    \qquad \text{for every } d_f \in \Dd(T),
+  \]
+  i.e.\ that $\Dd(T)$ is closed under $\disc$; and $\Dd_0 \subseteq \Dd(T)$,
+  again by Definition~\ref{def:discovery-state}. By induction, if
+  $\Dd_i \subseteq \Dd(T)$ then
+  \[
+    \Dd_{i+1} \;=\; \Dd_i \cup \bigcup_{d \in \Dd_i} \disc\bigl(d, \dataf(d)\bigr)
+    \;\subseteq\; \Dd(T)
+  \]
+  by closure, so $\reach_B(W) = \bigcup_{i \geq 0} \Dd_i \subseteq \Dd(T)$.
+
+  $(\Leftarrow)$ If $d \in \reach_B(W)$ then $d \in \Dd_i$ for some $i$, hence
+  \[
+    \disc\bigl(d, \dataf(d)\bigr) \subseteq \Dd_{i+1} \subseteq \reach_B(W).
+  \]
+  Thus $\reach_B(W)$ is closed under $\disc$, and $F(T) = \emptyset$ follows.
+\end{proof}
+
+\todo{Don't like the text here}
+Lemma~\ref{lem:frontier} is what makes the frontier useful: $F(T) = \emptyset$ is a
+condition the engine can test, whereas $\Dd(T) = \reach_B(W)$ is a statement about a
+set it cannot inspect. Together with Theorem~\ref{th:undetermined} it fixes exactly when
+delegation can be established at all.
+
 \begin{corollary}[Delegation requires complete discovery]
   \label{cor:complete-discovery}
-  Correct delegation of $B^{\prime}$ to $S$ is decidable at time $T$ exactly when
-  $F(T) = \emptyset$, that is, when every source of $\reach_B(W)$ has been retrieved.
+  The correctness of every delegation of a sub-BGP $B^{\prime} \subseteq B$ to a set
+  $S \subseteq \Dd(T)$ is determined at $T$ if and only if $F(T) = \emptyset$.
 \end{corollary}
 
 \begin{proof}
-  This requires showing for a g
+  $(\Leftarrow)$ Let $F(T) = \emptyset$ and let $W_1(T), W_2(T)$ be observationally
+  equivalent to $W(T)$. As $F(T)$ is computable from $O(T)$, both have an empty frontier,
+  so $\Dd = \reach_B(W) = \Dd(T)$ in both by Lemma~\ref{lem:frontier}. Then
+  $G_{\Dd} = \bigcup_{e \in \Dd(T)} \dataf(e)$ agrees in both, and since
+  $S \subseteq \Dd(T) = \Dd$, so do $G_{\Dd \setminus S}$ and $\dataf(d)$ at each
+  $d \in S$. Every term of the condition of Definition~\ref{def:delegation} therefore
+  agrees, and with it the verdict.
+
+  $(\Rightarrow)$ By contraposition. If $F(T) \neq \emptyset$, then
+  Theorem~\ref{th:undetermined} supplies a $B^{\prime}$, an $S$, and two states
+  observationally equivalent to $W(T)$ that disagree on the correctness of delegating
+  $B^{\prime}$ to $S$. That delegation is not determined at $T$.
 \end{proof}
+
+\begin{remark}
+  Determination is an information claim, not a computational one. If in addition
+  $\Dd(T)$ and each $\dataf(e)$ are finite, correctness is also \emph{decidable} once
+  $F(T) = \emptyset$: the observation fixes $G_{\Dd}$, so both sides of the condition of
+  Definition~\ref{def:delegation} can be evaluated and compared. Note that this settles
+  correctness without appeal to Theorem~\ref{th:correct-delegation}, which supplies a
+  cheap sufficient certificate from $\Delta$ alone rather than a decision procedure.
+\end{remark}
 
 From Corollary~\ref{cor:complete-discovery}, we find that the problem of runtime federation
 in discovery-based querying is impossible untill all sources are discovered. Depending
