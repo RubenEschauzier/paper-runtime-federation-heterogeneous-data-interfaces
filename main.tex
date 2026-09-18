@@ -81,7 +81,7 @@ Your abstract text goes here. Keep it concise, focused on the core database or d
 
 \subsection{Preliminaries}
 
-\subsection{Authority and Scope Completeness}
+\subsection{Query Delegation in Discovery Settings}
 \label{sec:authority}
 
 Dynamically integrating conjunctive sub-queries during federated query processing 
@@ -412,7 +412,7 @@ denotes what the engine actually can \emph{know} about its discovery setting at 
 \end{proof}
 
 \todo{Don't like the text here}
-Lemma~\ref{lem:frontier} is what makes the frontier useful: $F(T) = \emptyset$ is a
+is what makes the frontier useful: $F(T) = \emptyset$ is a
 condition the engine can test, whereas $\Dd(T) = \reach_B(W)$ is a statement about a
 set it cannot inspect. Together with Theorem~\ref{th:undetermined} it fixes exactly when
 delegation can be established at all.
@@ -438,28 +438,109 @@ delegation can be established at all.
   $B^{\prime}$ to $S$. That delegation is not determined at $T$.
 \end{proof}
 
-\begin{remark}
-  Determination is an information claim, not a computational one. If in addition
-  $\Dd(T)$ and each $\dataf(e)$ are finite, correctness is also \emph{decidable} once
-  $F(T) = \emptyset$: the observation fixes $G_{\Dd}$, so both sides of the condition of
-  Definition~\ref{def:delegation} can be evaluated and compared. Note that this settles
-  correctness without appeal to Theorem~\ref{th:correct-delegation}, which supplies a
-  cheap sufficient certificate from $\Delta$ alone rather than a decision procedure.
-\end{remark}
+\subsection{Authority Claims}
 
-From Corollary~\ref{cor:complete-discovery}, we find that the problem of runtime federation
-in discovery-based querying is impossible untill all sources are discovered. Depending
-on the number of sources, which is potentially thousands~\todo{cite here}, this is infeasible.
+From Corollary~\ref{cor:complete-discovery}, runtime federation in discovery-based
+querying is impossible until every source is discovered. With source counts in the
+thousands~\todo{cite here}, this is infeasible.
 
-To solve this, we introduce a semantic assumption on what data is considered
-relevant to our query execution. We call this the authoritativenss declaration assumption.
-In this assumption, we \todo{Explain}. This combines both \emph{authority} 
-who may make statements about a term and \emph{completeness} \todo{Explain}
+However, while classical query semantics require all data to be considered in query execution,
+this is not always an intuitive requirement. 
+Consider a federation of product catalogues, in which a manufacturer publishes the
+specifications of the products it makes while resellers and comparison services
+republish copies of them. A query over a product's specification is answered from the
+manufacturer alone. However, if any copies of, different, or wrong specifications exist 
+in the federation, they are considered equally `true'.
 
-This assumption is intuitive because \todo{Explain intuition with example}
 
-Formally, we get:
+We will work towards a query execution model that resolves this observation while
+also allowing the delegation of queries \emph{during} query execution.
+First we introduce the concept of a \emph{composite source},
+an (aggregating) view over sources in $\Du$ which contains no data of its own.
 
+\begin{definition}[Composite source]
+\label{def:composite}
+  Fix a setting \\ $W = \langle \Du, \dataf, \Dd_0, \disc \rangle$. A source $c \in \Du$ is
+  \emph{composite} when it holds no data of its own and is instead given by a pair
+  $\langle \Dd_c, \sigma_c \rangle$, with $\Dd_c \subseteq \Du$ a fixed set of sources it
+  aggregates and $\sigma_c : 2^{\Tt} \to 2^{\Tt}$ a \emph{selector} satisfying
+  $\sigma_c(G) \subseteq G$ for every $G \subseteq \Tt$ and given by a triple-wise
+  decidable description. Its data is then
+  \[
+    \dataf(c) \;=\; \sigma_c\Bigl( \bigcup_{d \in \Dd_c} \dataf(d) \Bigr).
+  \]
+  Sources that are not composite are \emph{base} sources. We require the aggregation
+  relation to be well-founded: no source aggregates itself, whether directly or through
+  a chain of other composite sources. Unfolding the definition of $\dataf(c)$ then
+  terminates at base sources, which is what makes $\dataf$ a well-defined map on all of
+  $\Du$. In the degenerate case $\Dd_c = \{d\}$ with $d$ a base source we obtain
+  $\dataf(c) = \sigma_c(\dataf(d))$, a filtered view of a single source, and with
+  $\sigma_c$ the identity a plain mirror of it.
+\end{definition}
+
+The key assumption to facilitate the delegation under incomplete discovery is 
+to allow composite sources to \emph{declare} that it is authoritative over a part of the
+data in a discovery setting that it aggregates over
+and that an engine may take that declaration at face value.
+In the product catalogue federation case, a manufacturer can declare that only 
+it can make statements about their products.
+This declaration depends on a authorativeness decider function as seen in 
+Definition~\ref{def:authoritativeness}.
+
+
+\begin{definition}[Authoritativeness declaration]
+\label{def:authoritativeness}
+Take a setting $W$ with data function $\dataf$. A composite source $c$ may
+\emph{declare} authority over its selector $\sigma_c$, meaning that the triples
+$\sigma_c$ selects are to be taken from $c$ and from no other source. Write
+$\mathcal{C} \subseteq \Du$ for the composite sources that declare, and put
+$\sigma_d = \emptyset$ for any source $d \notin \mathcal{C}$. The \emph{authoritative
+data} of a source is then what it may still speak for,
+\[
+  \theta(d, G) \;=\;
+  \bigl\{\, t \in G \;\bigm|\; t \in \sigma_d(G)
+  \ \text{ or }\ t \notin \textstyle\bigcup_{c \in \mathcal{C}} \sigma_c(G) \,\bigr\},
+\]
+so that a triple survives at $d$ when $d$ itself declares it, or when no source declares
+it at all. Evaluation is carried out over authoritative data rather than stored data:
+for $A \subseteq \Du$ we replace $G_A$ of Definition~\ref{def:delegation} by
+\[
+  G_A \;=\; \bigcup_{d \in A} \theta\bigl(d, \dataf(d)\bigr).
+\]
+\end{definition}
+
+Thus, when a source claims \emph{authority} over a part of the discovery setting,
+\emph{completeness} of the query result is now with respect to the new $G_{A}$.
+
+\todo{Tie to literature here about subwebs and relational}
+
+\todo{Paragraph about scope of claim and anchor mapping definition}
+\todo{We cannot allow anyone to say anything about another source. We must determine
+who can say what}
+Nothing so far prevents a source from selecting data it has no business aggregating. We
+therefore define an anchor mapping, which determines whether a declared $\sigma_c$ is
+valid.
+
+
+\begin{definition}[Anchor mapping]
+  
+\end{definition}
+
+
+\todo{This part comes after the definitions this is where the first real function
+definition comes. Based on this we will prove we \emph{can} determine }
+We limit a declaration to triples whose \emph{subject} falls within the declared scope.
+The picture is that of horizontal partitioning, with each participant the sole source of
+record for a region of the key space. The difference is that the partitioning is declared
+by the participants rather than imposed by a coordinator, so no global catalogue of it
+exists and both the participants and the partitioning are discovered during execution.
+\todo{Two drafts}
+In this work, we will use a specific form of this mapping, which aligns with 
+\todo{Subweb paper here}.
+
+\begin{definition}{}
+  
+\end{definition}
 
 
 % Our central assumption is that a data access interface may \emph{declare} that it
@@ -741,6 +822,19 @@ Formally, we get:
 Under this query execution model, we can now investigate delegating queries to composite sources 
 when our model allows determining \emph{correct} delegation under \emph{incomplete} discovery.
 
+
+\todo{Lemma on how theorem 1 holds if we filter any sources in scope 
+of $c$ both backwards and forwards in time. Mention how the filtering changes
+nothing given the assumptions / semantics of our model}
+\begin{proof}
+  Sketch
+  Part 1. If we filter -> Theorem~\ref{th:correct-delegation} can be directly applied
+  Part 2. Filtering is possible: forward -> easy just take $\disc()$ 
+  and apply setminus of in scope documents.
+  Backwards -> deduplication, we only have duplicate results. So filter any
+  intermediate results at time T in data(scope) and filter any produced results
+  in composite resource on B prime
+\end{proof}
 \subsection{Adaptive Query Planning with Composite Sources}
 Given the capability of delegating these sub queries, we must now move to the system-side of
 our problem. Specifically, due to the dynamic discovery of composite sources and the uncertainty
@@ -772,6 +866,15 @@ and link traversal.
 
 
 \section{Evaluation}
+TODO: Ensure correctness of multiple composite resources!!
+Experiments: 
+- Full benchmark and abalations
+- Client-scaling test (find server-side usage and client-side scaling behavior)
+- Query where linear is fastest to delegate with single pod 
+(show star-only fails and cost-based fails)
+- Query where linear is fastest to delegate with multiple pods (show if cost-based doesn't fail)
+- Query where star is fastest multiple pods (show if cost-based doesn't fail)
+- Multiple vs Single pod query
 
 \section{Conclusion}
 Summarize results and point to future work.
