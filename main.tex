@@ -496,11 +496,13 @@ $\sigma_c$ selects are to be taken from $c$ and from no other source. Write
 $\mathcal{C} \subseteq \Du$ for the composite sources that declare, and put
 $\sigma_d = \emptyset$ for any source $d \notin \mathcal{C}$. The \emph{authoritative
 data} of a source is then what it may still speak for,
-\[
+\begin{align}
+  \label{fn:theta}
   \theta(d, G) \;=\;
   \bigl\{\, t \in G \;\bigm|\; t \in \sigma_d(G)
   \ \text{ or }\ t \notin \textstyle\bigcup_{c \in \mathcal{C}} \sigma_c(G) \,\bigr\},
-\]
+\end{align}
+
 so that a triple survives at $d$ when $d$ itself declares it, or when no source declares
 it at all. Evaluation is carried out over authoritative data rather than stored data:
 for $A \subseteq \Du$ we replace $G_A$ of Definition~\ref{def:delegation} by
@@ -517,15 +519,55 @@ Thus, when a source claims \emph{authority} over a part of the discovery setting
 \todo{Paragraph about scope of claim and anchor mapping definition}
 \todo{We cannot allow anyone to say anything about another source. We must determine
 who can say what}
-Nothing so far prevents a source from selecting data it has no business aggregating. We
-therefore define an anchor mapping, which determines whether a declared $\sigma_c$ is
-valid.
-
+Nothing so far prevents a source from selecting data it should not aggregate. On the web,
+currently any source can claim authority over, for example, DBpedia, even if it actually 
+is not affiliated with it. This would silently drop all query results related to DBpedia.
+We therefore define an anchor mapping, which determines whether a declared $\sigma_c$ is
+valid for the whole source.
 
 \begin{definition}[Anchor mapping]
-  
+  Given a source $d$, the anchor mapping is given by
+  \[
+    \alpha(d, \sigma_d) \;=\;
+  \begin{cases}
+    \sigma_d, & \text{if $\sigma_{d}$ admissible }\\[2pt]
+    \text{pass-through function}, & \text{otherwise.}
+  \end{cases}
+  \]
+  The anchor mapping replaces the $\sigma$ function in Function~\ref{fn:theta}, 
+  such that
+  \todo{Think about how arguments to pass}
+  \begin{align}
+  \theta(d, G) \;=\;
+  \bigl\{\, t \in G \;\bigm|\; t \in \sigma_d(G)
+  \ \text{ or }\ t \notin \textstyle\bigcup_{c \in \mathcal{C}} \sigma_c(G) \,\bigr\}.
+  \end{align}
 \end{definition}
 
+For this work, we will consider a specific case of these definitions. First, as the work
+considers discovery-based querying on the web, we will use the namespace of a function
+as its anchor mapping:
+
+\todo{Definition, anchormapping admissible if document in namespace of composite resource}
+
+Then, to decide authoritativeness on the triple level, we validate if the subject
+of a triple is within the namespace of the composite resource. Thus, given a composite
+resource with namespace \url{http://example.org/} any subject starting with this namespace
+is within the authoritativeness of that resource.
+The picture is that of horizontal partitioning, with each participant the sole source of
+record for a region of the key space \todo{What does this mean?}. 
+The difference is that the partitioning is declared
+by the participants rather than imposed by a coordinator, so no global catalogue of it
+exists and both the participants and the partitioning are discovered during execution.
+The selector function is defined as:
+
+\todo{Definition here}
+
+
+Finally, we take composite resources to aggregate all documents within the namespace of this resource,
+with no other composite resources existing under it. We will later consider the impact when
+we relax this requirement.\todo{What happens if we relax this?}.
+In this setting, we can now attempt to delegate conjuctive queries to these resources.
 
 \todo{This part comes after the definitions this is where the first real function
 definition comes. Based on this we will prove we \emph{can} determine }
@@ -543,11 +585,6 @@ In this work, we will use a specific form of this mapping, which aligns with
 \end{definition}
 
 
-% Our central assumption is that a data access interface may \emph{declare} that it
-% speaks for part of the Web, and that a query engine may take that declaration at its
-% word. The Linked Data literature separates two ingredients of such a declaration, and
-% we keep them separate because they have different logical status and different
-% verification stories.
 
 % \emph{Authority} is the question of \emph{who may speak} about a term. Following the
 % Linked Data principles, the document obtained by dereferencing an IRI is the
@@ -586,238 +623,6 @@ In this work, we will use a specific form of this mapping, which aligns with
 % \mathsf{data}(d)$, and $G|_S = \{ (s,p,o) \in G \mid s \in S \}$ for the restriction
 % of a graph to subjects drawn from $S \subseteq \mathcal{U}$.
 
-% An \emph{interface} $c$ is a pair $\langle u_c, \mathsf{data}(c) \rangle$ of a URI and
-% the graph it answers over. Documents are the degenerate case; composite resources,
-% SPARQL endpoints and Triple Pattern Fragments servers differ only in the query
-% language they accept, which we treat in \S\ref{sec:delegation}.
-
-% \subsubsection{Scopes and scope claims}
-
-% \begin{definition}[Scope]
-% \label{def:scope}
-% A \emph{scope} is a set $S \subseteq \mathcal{U}$ of IRIs, given by a finite,
-% decidable description.
-% \end{definition}
-
-% Nothing below depends on how a scope is described, only on the fact that membership is
-% decidable without a network request. Our canonical instance is the \emph{URI space}:
-% for a namespace $N \in \mathcal{U}$ we write $S_N = \{u \in \mathcal{U} \mid N
-% \text{ is a prefix of } u\}$. This is precisely \texttt{void:uriSpace}, and its
-% regular-expression generalisation \texttt{void:uriRegexPattern}, from the VoID
-% vocabulary~\cite{alexander2011void}; it is also the granularity at which
-% \citet{saleem2014hibiscus} index URI authorities for source selection. Scopes
-% described by a SHACL shape or by a class extent fit Definition~\ref{def:scope} equally
-% well, at the cost of a membership test that is no longer a string operation.
-
-% \begin{definition}[Scope claim]
-% \label{def:claim}
-% A \emph{scope claim} is a pair $\langle c, S \rangle$ asserting that interface $c$
-% speaks for scope $S$.
-% \end{definition}
-
-% A claim is worthless if anyone may make it: an interface at
-% \texttt{https://evil.example/} claiming $S_{\texttt{http://dbpedia.org/resource/}}$
-% would silently truncate every query that touches DBpedia. We therefore ground
-% admissibility in the same dereference mechanism that grounds authority
-% in~\cite{hogan2009authoritative}.
-
-% \begin{definition}[Admissibility]
-% \label{def:admissible}
-% A claim $\langle c, S_N \rangle$ is \emph{admissible} in $W$ if
-% $\mathsf{adoc}(N)$ is defined and the claim occurs in
-% $\mathsf{data}(\mathsf{adoc}(N))$, or is reachable from it by a chain of
-% delegations each of which is itself published in the document of the delegating
-% namespace. We write $\mathcal{C}$ for a set of pairwise scope-disjoint admissible
-% claims.
-% \end{definition}
-
-% Admissibility costs at most one extra lookup, and in the common case costs none: when
-% $u_c \in S_N$ the claim is self-hosted and the interface is discovered by
-% dereferencing $N$ anyway. Requiring pairwise disjointness of scopes in $\mathcal{C}$
-% is a simplification we revisit in Remark~\ref{rem:overlap}.
-
-% \subsubsection{The assumption}
-
-% \begin{definition}[Authoritative view]
-% \label{def:authview}
-% Let $\mathcal{C}$ be a set of admissible claims for $W$. The \emph{authoritative view}
-% $W^{\mathcal{C}}$ is the subweb $\langle D, \mathsf{data}^{\mathcal{C}},
-% \mathsf{adoc} \rangle$ of $W$ with
-% \[
-%   \mathsf{data}^{\mathcal{C}}(d) \;=\; \mathsf{data}(d) \setminus
-%   \bigcup_{\langle c, S\rangle \in \mathcal{C},\; d \neq \mathsf{adoc}(u_c)}
-%   \mathsf{data}(d)|_{S}.
-% \]
-% \end{definition}
-
-% \begin{assumption}[Authority]
-% \label{as:authority}
-% Query answers are defined relative to $W^{\mathcal{C}}$ rather than $W$.
-% \end{assumption}
-
-% Assumption~\ref{as:authority} is a choice of semantics, not a claim about the world.
-% This matters. Stating instead that triples with subject in $S$ \emph{do not occur}
-% outside $c$ would be an empirical claim about the whole Web, false by construction --
-% on an open Web anyone may say anything about anything -- and unverifiable by any
-% engine, since no engine can enumerate the Web. Making the assumption semantic sidesteps
-% both problems, and places it in the same tradition as reachability-based
-% $c$-semantics~\cite{hartig2012foundations}, LDQL~\cite{hartig2015ldql} and subweb
-% specifications~\cite{bogaerts2021subweb}, all of which define answers relative to a
-% declared portion of the Web. It is also the only defensible reading of the intuition
-% behind the assumption: that a pod representing a person should be believed about that
-% person, and that a third party's unilateral claims about them should not enter the
-% answer. Because $W^{\mathcal{C}}$ is a subweb of $W$, answers under
-% Assumption~\ref{as:authority} are sound with respect to $W$ by construction.
-
-% \begin{lemma}[Scope exclusivity]
-% \label{lem:exclusive}
-% For every admissible $\langle c, S \rangle \in \mathcal{C}$,
-% $\mathsf{AllData}(W^{\mathcal{C}})|_{S} = \mathsf{data}(c)|_{S}$.
-% \end{lemma}
-
-% \begin{proof}
-% Immediate from Definition~\ref{def:authview}: every document other than $c$'s has its
-% $S$-subject triples removed, and $c$'s are retained.
-% \end{proof}
-
-% Lemma~\ref{lem:exclusive} is the property we actually use. In $W^{\mathcal{C}}$ the
-% interface $c$ is the \emph{unique relevant source} for subjects in $S$, which is the
-% precondition under which \citet{schwarte2011fedx} form exclusive groups and ship them
-% whole to a single endpoint. Note that the lemma is a theorem, not a hypothesis: in a
-% world filtered by Assumption~\ref{as:authority}, scope completeness comes for free.
-% The only remaining hypothesis is local to the publisher.
-
-% \begin{assumption}[Interface completeness]
-% \label{as:iface}
-% An interface $c$ evaluates its declared fragment over the whole of
-% $\mathsf{data}(c)$; that is, $c$ has in fact aggregated the sources it claims to
-% aggregate.
-% \end{assumption}
-
-% Assumption~\ref{as:iface} is the one empirical obligation in the framework, and it is
-% deliberately the publisher's: $c$ is the only party with the access rights and the
-% inventory needed to discharge it. In Darari et al.'s
-% notation~\cite{darari2013completeness} it is the statement
-% \(
-%   \mathrm{Compl}\big((?s,?p,?o) \mid \textsc{filter}\,\mathrm{strStarts}(\mathrm{str}(?s), N)\big)
-% \)
-% indexed by $c$, which is why we can reuse their entailment machinery when reasoning
-% about combinations of claims. Viewed from the database side it says the interface's
-% view is \emph{exact} rather than merely sound, in the sense of the
-% answering-queries-using-views literature~\cite{halevy2001views,abiteboul1998views};
-% exactness is precisely what permits pruning the remaining sources, whereas soundness
-% alone permits only adding them.
-
-% \subsubsection{From exclusivity to delegation}
-% \label{sec:delegation}
-
-% Lemma~\ref{lem:exclusive} governs individual subjects. Delegating a conjunctive query
-% requires that \emph{every} triple pattern shipped to $c$ binds its subject inside $S$;
-% otherwise $c$ answers only part of the pattern and we lose completeness silently. This
-% is exactly the condition \citet{harth2012completeness} identify: under subject
-% authority a pattern is completely answerable only if its subject is bound by a
-% constant, or by a variable that another completely answerable pattern binds.
-
-% \begin{definition}[$S$-groundedness]
-% \label{def:grounded}
-% A BGP $B$ is \emph{$S$-grounded} if for every $W$, every $\mu \in \llbracket B
-% \rrbracket_{W^{\mathcal{C}}}$ and every $tp \in B$, $\mu(\mathrm{subj}(tp)) \in S$.
-% \end{definition}
-
-% \begin{theorem}[Safe delegation]
-% \label{thm:delegation}
-% Let $\langle c, S \rangle \in \mathcal{C}$ be admissible, let
-% Assumption~\ref{as:iface} hold for $c$, and let $B' \subseteq B$ be $S$-grounded.
-% Then $\llbracket B' \rrbracket_{\mathsf{data}(c)} = \llbracket B'
-% \rrbracket_{W^{\mathcal{C}}}$.
-% \end{theorem}
-
-% Theorem~\ref{thm:delegation} is what makes $B'$ an exclusive group: it may be shipped
-% to $c$ in one request, and no other interface need be consulted for it.
-
-% Deciding $S$-groundedness syntactically needs one further declaration, and this is
-% where the running example of a composite resource over a path
-% \[
-%   tp_1 = {?s}\ \langle p_1\rangle\ {?o_1}, \qquad
-%   tp_2 = {?o_1}\ \langle p_2\rangle\ {?o_2}
-% \]
-% becomes delicate. A subject-scope claim on $S$ says nothing about where the objects of
-% $p_1$ live, so $\{tp_1, tp_2\}$ is \emph{not} $S$-grounded merely because
-% $?s$ ranges over $S$: a binding of $?o_1$ may leave the scope, and $tp_2$ would then be
-% answered incompletely by $c$. We close the gap with a closure declaration.
-
-% \begin{definition}[Scope closure]
-% \label{def:closure}
-% An interface $c$ with scope $S$ declares predicate $p$ \emph{scope-closed} if for
-% every $(s,p,o) \in \mathsf{AllData}(W^{\mathcal{C}})$ with $s \in S$ it holds that
-% $o \in S$.
-% \end{definition}
-
-% \begin{lemma}
-% \label{lem:syntactic}
-% $B$ is $S$-grounded if every $tp \in B$ has a subject that is either a constant in
-% $S$, or a variable occurring in the object position of some $tp' \in B$ whose
-% predicate is scope-closed for $S$ and whose subject is itself $S$-grounded.
-% \end{lemma}
-
-% Under Lemma~\ref{lem:syntactic}, the path above is delegable exactly when $c$ declares
-% $p_1$ scope-closed --- which, for a pod, is the ordinary case for containment and
-% membership predicates, since the contents of a storage share its URI space. Closure
-% declarations are the same kind of publisher-supplied structural knowledge that
-% \citet{taelman2023structural} exploit for LTQP over Solid and that shape-based
-% optimisation~\cite{taelman2024shapes} derives from SHACL; we differ only in using them
-% to justify \emph{omitting} requests rather than to prioritise them. An interface that
-% cannot declare closure is not excluded from the framework: it simply offers a smaller
-% delegable fragment, and the planner of \S\ref{sec:planning} falls back to traversal for
-% the remainder.
-
-% More generally, nothing forces a scope claim to be the only thing an interface
-% advertises. An interface may publish an arbitrary completeness statement
-% $\mathrm{Compl}(P_1 \mid P_2)$~\cite{darari2013completeness}, of which the
-% subject-scope claim is the special case $P_1 = (?s,?p,?o)$ under a URI-space filter and
-% $P_2 = \emptyset$, and Theorem~\ref{thm:delegation} generalises to sub-BGPs subsumed by
-% $P_1$ under $P_2$. We develop the scoped case because it is cheap to publish, cheap to
-% check, and self-verifying through dereference; the general case is the natural
-% extension point.
-
-% \subsubsection{Remarks}
-
-% \begin{remark}[Subject authority is a choice]
-% We instantiate \citeauthor{harth2012completeness}'s authority lattice at the
-% $s$-auth point. This matches entity-centric decentralisation, where the unit of
-% publication and of access control is the entity, and it is the only authority type
-% that makes namespace scoping meaningful for a single interface. Predicate and object
-% authority remain available and would change only Definition~\ref{def:authview}.
-% \end{remark}
-
-% \begin{remark}[Blank nodes and literals]
-% $G|_S$ retains only triples with IRI subjects. Triples with blank-node subjects are
-% not covered by any scope; we treat them as document-scoped and exclude them from
-% delegation, which is sound because they cannot be referred to from outside their
-% document.
-% \end{remark}
-
-% \begin{remark}[Overlapping scopes]
-% \label{rem:overlap}
-% URI-space scopes form a forest under prefix containment, so two admissible claims are
-% either disjoint or nested. We adopt the most-specific-claim rule: the interface with
-% the longest matching prefix wins, and Definition~\ref{def:authview} filters against
-% that interface only. Genuinely overlapping non-prefix scopes would break
-% Lemma~\ref{lem:exclusive}; the planner detects this at claim-collection time and
-% degrades to the union of the candidate interfaces, which costs recall nothing and
-% pruning everything.
-% \end{remark}
-
-% \begin{remark}[What we do not assume]
-% We do not assume the Web is closed, that scope claims are truthful about the world, or
-% that an engine can enumerate the sources speaking about a subject. We assume only that
-% a claim is admissible (Definition~\ref{def:admissible}), that the consumer elects to
-% honour it (Assumption~\ref{as:authority}), and that the publisher meets its own
-% declaration (Assumption~\ref{as:iface}). A consumer who distrusts a publisher may
-% discard its claims and recover traversal semantics, exactly as a querying agent may
-% decline a subweb specification in~\cite{bogaerts2021subweb}.
-% \end{remark}
-
 \subsection{Delegating Conjuctive Queries}
 Under this query execution model, we can now investigate delegating queries to composite sources 
 when our model allows determining \emph{correct} delegation under \emph{incomplete} discovery.
@@ -835,6 +640,11 @@ nothing given the assumptions / semantics of our model}
   intermediate results at time T in data(scope) and filter any produced results
   in composite resource on B prime
 \end{proof}
+
+\todo{Section indicating how anchor variables are required to correctly filter out partial results}
+\todo{This then makes stars and size 2 chains attractive candidates to reduce client work, while
+longer chains can't really be pruned.}
+
 \subsection{Adaptive Query Planning with Composite Sources}
 Given the capability of delegating these sub queries, we must now move to the system-side of
 our problem. Specifically, due to the dynamic discovery of composite sources and the uncertainty
@@ -870,6 +680,7 @@ TODO: Ensure correctness of multiple composite resources!!
 Experiments: 
 - Full benchmark and abalations
 - Client-scaling test (find server-side usage and client-side scaling behavior)
+- Test query with increasing pod depth to find answer
 - Query where linear is fastest to delegate with single pod 
 (show star-only fails and cost-based fails)
 - Query where linear is fastest to delegate with multiple pods (show if cost-based doesn't fail)
