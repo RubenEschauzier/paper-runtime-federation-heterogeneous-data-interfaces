@@ -6,11 +6,14 @@
 \usepackage{amsmath, amssymb, amsthm}
 \usepackage{stmaryrd}
 \usepackage{booktabs}
+\usepackage{subcaption}
+\captionsetup[subfigure]{font=footnotesize, labelfont=normalfont, textfont=normalfont}
 
 \theoremstyle{plain}
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
 \newtheorem{assumption}{Assumption}
+\newtheorem{proposition}{Proposition}
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}
 \newtheorem{corollary}{Corollary}
@@ -456,133 +459,141 @@ in the federation, they are considered equally `true'.
 We will work towards a query execution model that resolves this observation while
 also allowing the delegation of queries \emph{during} query execution.
 First we introduce the concept of a \emph{composite source},
-an (aggregating) view over sources in $\Du$ which contains no data of its own.
+an aggregating view over sources in $\Du$ which contains no data of its own.
 
 \begin{definition}[Composite source]
 \label{def:composite}
   Fix a setting \\ $W = \langle \Du, \dataf, \Dd_0, \disc \rangle$. A source $c \in \Du$ is
-  \emph{composite} when it holds no data of its own and is instead given by a pair
-  $\langle \Dd_c, \sigma_c \rangle$, with $\Dd_c \subseteq \Du$ a fixed set of sources it
-  aggregates and $\sigma_c : 2^{\Tt} \to 2^{\Tt}$ a \emph{selector} satisfying
-  $\sigma_c(G) \subseteq G$ for every $G \subseteq \Tt$ and given by a triple-wise
-  decidable description. Its data is then
+  \emph{composite} when it holds no data of its own and is instead given by a set
+  $\Dd_c \subseteq \Du$ of sources it aggregates. It contains all of their data,
   \[
-    \dataf(c) \;=\; \sigma_c\Bigl( \bigcup_{d \in \Dd_c} \dataf(d) \Bigr).
+    \dataf(c) \;=\; \bigcup_{d \in \Dd_c} \dataf(d),
   \]
-  Sources that are not composite are \emph{base} sources. We require the aggregation
-  relation to be well-founded: no source aggregates itself, whether directly or through
-  a chain of other composite sources. Unfolding the definition of $\dataf(c)$ then
-  terminates at base sources, which is what makes $\dataf$ a well-defined map on all of
-  $\Du$. In the degenerate case $\Dd_c = \{d\}$ with $d$ a base source we obtain
-  $\dataf(c) = \sigma_c(\dataf(d))$, a filtered view of a single source, and with
-  $\sigma_c$ the identity a plain mirror of it.
+  and a request to $c$ is evaluated over all of it. Sources that are not composite are
+  \emph{base} sources. We require the aggregation relation to be well-founded 
+  such that no source aggregates itself either directly or through a chain. 
+  Thus, when unfolding $\dataf(c)$ it is expressed
+  in base sources.
 \end{definition}
 
-The key assumption to facilitate the delegation under incomplete discovery is 
-to allow composite sources to \emph{declare} that it is authoritative over a part of the
-data in a discovery setting that it aggregates over
-and that an engine may take that declaration at face value.
-In the product catalogue federation case, a manufacturer can declare that only 
-it can make statements about their products.
-This declaration depends on a authorativeness decider function as seen in 
-Definition~\ref{def:authoritativeness}.
+In the case $\Dd_c = \{d\}$ with $d$ a base source, $\dataf(c) = \dataf(d)$. Then,
+$c$ is equivalent to $d$.
+
+\todo{Add this to after claim is defined} 
+and interchangeable when $c$ claims (Def.~\ref{def:claim}) nothing. 
+
+% as far as its data goes, $c$ \emph{is} $d$. A degenerate composite that claims nothing
+% (Definition~\ref{def:claim}) is interchangeable with $d$ under every definition below, so
+% in proofs we may treat a base source as a degenerate composite that claims nothing, and a
+% single document that does claim as a degenerate composite that does.
 
 
-\begin{definition}[Authoritativeness declaration]
-\label{def:authoritativeness}
-Take a setting $W$ with data function $\dataf$. A composite source $c$ may
-\emph{declare} authority over its selector $\sigma_c$, meaning that the triples
-$\sigma_c$ selects are to be taken from $c$ and from no other source. Write
-$\mathcal{C} \subseteq \Du$ for the composite sources that declare, and put
-$\sigma_d = \emptyset$ for any source $d \notin \mathcal{C}$. The \emph{authoritative
-data} of a source is then what it may still speak for,
-\begin{align}
-  \label{fn:theta}
-  \theta(d, G) \;=\;
-  \bigl\{\, t \in G \;\bigm|\; t \in \sigma_d(G)
-  \ \text{ or }\ t \notin \textstyle\bigcup_{c \in \mathcal{C}} \sigma_c(G) \,\bigr\},
-\end{align}
+Next we introduce \emph{claims}, which declare a subset of data the composite source
+aggregates over that matches a certain criterion. 
 
-so that a triple survives at $d$ when $d$ itself declares it, or when no source declares
-it at all. Evaluation is carried out over authoritative data rather than stored data:
-for $A \subseteq \Du$ we replace $G_A$ of Definition~\ref{def:delegation} by
+\begin{definition}[Claim]
+\label{def:claim}
+A composite source $c$ may \emph{declare} a claim. A claim is a \emph{triple-wise}
+criterion $\sigma_c : \Tt \to \{0, 1\}$, an indicator function mapping triples to 
+claim membership.
+
+% i.e.\ $\sigma_c(G) = \{\, t \in G \mid \sigma_c(\{t\}) = \{t\} \,\}$, and $c$
+% \emph{claims} $\tau$ when $\sigma_c(\{\tau\}) = \{\tau\}$: the triples $\sigma_c$ selects
+% are to be taken from $c$ and from no other source. Write $\mathcal{C} \subseteq \Du$ for
+% the composite sources that declare.
+\end{definition}
+
+
+A claim is published with $c$ and thus observed once $c$ is retrieved. 
+The core idea on which our query execution model builds is the \emph{principle of
+exclusive claims}: queries are answered as if every claim were exclusive, that is, as if
+no source other than $c$ held a triple claimed by $c$.
+Like the closed-world assumption, this does not state how the federation environment
+is; it fixes how we answer queries over it. The data need not satisfy it, and on the Web
+it often does not. Definition~\ref{def:claim-semantics} makes the principle precise by
+fixing the answer on any data, and the engine enforces that answer, which we discuss in
+Section~\todo{?}
+
+% Where the data violate it, we answer over the largest part of
+% the data that satisfies it:
+% \[
+%   G^{\alpha}_A \;=\; \bigcup_{d \in A}
+%   \bigl\{\, t \in \dataf(d) \;\bigm|\; d \text{ claims } t
+%   \ \text{ or no } c \in \Dd \text{ claims } t \,\bigr\}.
+% \]
+
+% \begin{proposition}
+% Under Assumption~\ref{as:disjoint}, $G^{\alpha}_{\Dd}$ is obtained by removing from each
+% source exactly the triples Assumption~\ref{as:exclusive} forbids it to hold, and no
+% others.
+% \end{proposition}
+
+Claims indicate that a composite source is the only source for answers for triples that matched
+the claim indicator function. Engines can then reason about this claim to determine
+for what data delegating BGPs to composite sources declaring a claim is correct.
+As an example, in the product catalogue federation,
+the manufacturer declares that statements about its products are to be taken from it
+alone, so that copies held by resellers are disregarded.
+
+Nothing so far prevents a source from claiming data it should not be allowed to. 
+On the Web, any source could claim authority over, for example, DBpedia without being
+affiliated with it, and thereby drop every DBpedia result held elsewhere. We
+therefore bound each claim by what its source is entitled to.
+
+\begin{definition}[Admissibility, effective claim]
+\label{def:admissible}
+An \emph{admissibility function} assigns every composite $c$ a criterion
+$\rho_c : \Tt \to \{0,1\}$, the triples $c$ is entitled to claim. It is part of the
+setting, not of any declaration, and depends only on the triple and the identity of $c$.
+The \emph{effective claim} of $c$ is
 \[
-  G_A \;=\; \bigcup_{d \in A} \theta\bigl(d, \dataf(d)\bigr).
+  \alpha_c(t) \;=\; \sigma_c(t) \cdot \rho_c(t),
 \]
+with $\alpha_d \equiv 0$ for base sources and for composites that declare nothing. A
+source $d$ \emph{claims} $t$ when $\alpha_d(t) = 1$, and the principle of exclusive claims
+is read with effective claims.
 \end{definition}
 
-Thus, when a source claims \emph{authority} over a part of the discovery setting,
-\emph{completeness} of the query result is now with respect to the new $G_{A}$.
+An illegitimate claim thus shrinks to its admissible part rather than being rejected
+whole: a composite claiming both DBpedia and its own namespace keeps the latter.
 
-\todo{Tie to literature here about subwebs and relational}
-
-\todo{Paragraph about scope of claim and anchor mapping definition}
-\todo{We cannot allow anyone to say anything about another source. We must determine
-who can say what}
-Nothing so far prevents a source from selecting data it should not aggregate. On the web,
-currently any source can claim authority over, for example, DBpedia, even if it actually 
-is not affiliated with it. This would silently drop all query results related to DBpedia.
-We therefore define an anchor mapping, which determines whether a declared $\sigma_c$ is
-valid for the whole source.
-
-\begin{definition}[Anchor mapping]
-  Given a source $d$, the anchor mapping is given by
-  \[
-    \alpha(d, \sigma_d) \;=\;
-  \begin{cases}
-    \sigma_d, & \text{if $\sigma_{d}$ admissible }\\[2pt]
-    \text{pass-through function}, & \text{otherwise.}
-  \end{cases}
-  \]
-  The anchor mapping replaces the $\sigma$ function in Function~\ref{fn:theta}, 
-  such that
-  \todo{Think about how arguments to pass}
-  \begin{align}
-  \theta(d, G) \;=\;
-  \bigl\{\, t \in G \;\bigm|\; t \in \sigma_d(G)
-  \ \text{ or }\ t \notin \textstyle\bigcup_{c \in \mathcal{C}} \sigma_c(G) \,\bigr\}.
-  \end{align}
+\begin{definition}[Claim semantics]
+\label{def:claim-semantics}
+A triple $t \in \dataf(d)$ is \emph{admitted from} $d$ if
+\begin{equation}
+  \label{eq:admitted}
+  \alpha_d(t) = 1 \quad\text{or}\quad \alpha_c(t) = 0 \text{ for all } c \in \Dd \setminus \{d\},
+\end{equation}
+and for $A \subseteq \Dd$ the \emph{claim-respecting graph} is
+\[
+  G^{\alpha}_A \;=\; \bigcup_{d \in A}
+  \{\, t \in \dataf(d) \mid t \text{ is admitted from } d \,\}.
+\]
+The
+\emph{claim semantics} of $B$ is $\ev{B}{G^{\alpha}_{\Dd}}$. It replaces the reference
+answer of Definition~\ref{def:reach}, and correctness of a delegation
+(Definition~\ref{def:delegation}) is measured with $G^{\alpha}_A$ in place of $G_A$.
 \end{definition}
 
-For this work, we will consider a specific case of these definitions. First, as the work
-considers discovery-based querying on the web, we will use the namespace of a function
-as its anchor mapping:
+Thus, any claimed triple only occurs within the source that claims it, while unclaimed
+triples are left in the data as-is. If no source claims
+anything, $G^{\alpha}_A = G_A$ and the claim semantics is the reference answer of
+Definition~\ref{def:reach}.
 
-\todo{Definition, anchormapping admissible if document in namespace of composite resource}
+\todo{Possibly tie to literature here about subwebs and relational?}
 
-Then, to decide authoritativeness on the triple level, we validate if the subject
-of a triple is within the namespace of the composite resource. Thus, given a composite
-resource with namespace \url{http://example.org/} any subject starting with this namespace
-is within the authoritativeness of that resource.
-The picture is that of horizontal partitioning, with each participant the sole source of
-record for a region of the key space \todo{What does this mean?}. 
-The difference is that the partitioning is declared
-by the participants rather than imposed by a coordinator, so no global catalogue of it
-exists and both the participants and the partitioning are discovered during execution.
-The selector function is defined as:
+We keep admissibility abstract until Section~\ref{sec:namespace-claims}, where we
+instantiate it by namespaces; the results in between hold for any admissibility function.
 
-\todo{Definition here}
+\begin{assumption}[Disjoint claims]
+\label{as:disjoint}
+No triple is claimed by two sources: for $c \neq c'$ and every $t \in \Tt$,
+$\alpha_c(t) \cdot \alpha_{c'}(t) = 0$.
+\end{assumption}
 
-
-Finally, we take composite resources to aggregate all documents within the namespace of this resource,
-with no other composite resources existing under it. We will later consider the impact when
-we relax this requirement.\todo{What happens if we relax this?}.
-In this setting, we can now attempt to delegate conjuctive queries to these resources.
-
-\todo{This part comes after the definitions this is where the first real function
-definition comes. Based on this we will prove we \emph{can} determine }
-We limit a declaration to triples whose \emph{subject} falls within the declared scope.
-The picture is that of horizontal partitioning, with each participant the sole source of
-record for a region of the key space. The difference is that the partitioning is declared
-by the participants rather than imposed by a coordinator, so no global catalogue of it
-exists and both the participants and the partitioning are discovered during execution.
-\todo{Two drafts}
-In this work, we will use a specific form of this mapping, which aligns with 
-\todo{Subweb paper here}.
-
-\begin{definition}{}
-  
-\end{definition}
+Section~\ref{sec:namespace-claims} gives a sufficient condition for namespace claims. We
+discuss relaxing the assumption in Section~\ref{sec:overlap}.~\todo{What happens if we
+relax this?}
 
 
 
@@ -623,9 +634,108 @@ In this work, we will use a specific form of this mapping, which aligns with
 % \mathsf{data}(d)$, and $G|_S = \{ (s,p,o) \in G \mid s \in S \}$ for the restriction
 % of a graph to subjects drawn from $S \subseteq \mathcal{U}$.
 
-\subsection{Delegating Conjuctive Queries}
-Under this query execution model, we can now investigate delegating queries to composite sources 
-when our model allows determining \emph{correct} delegation under \emph{incomplete} discovery.
+\subsection{Delegating Conjunctive Queries}
+Under this query execution model, we now show that correct delegation to composite
+sources can be established under \emph{incomplete} discovery.
+
+\begin{lemma}[Claimed triples occur only in their claimant]
+\label{lem:exclusive}
+Under Assumption~\ref{as:disjoint}, let $c \in \Dd$ claim $\tau$. Then $\tau$ is
+admitted from no source $d \neq c$. Consequently, for every $A \subseteq \Dd$,
+$\tau \in G^{\alpha}_A$ implies $c \in A$ and $\tau \in \dataf(c)$.
+\end{lemma}
+
+\begin{proof}
+Suppose $\tau$ is admitted from some $d \neq c$. The second clause of
+\eqref{eq:admitted} fails, as $c \in \Dd \setminus \{d\}$ claims $\tau$. So the first
+holds and $d$ claims $\tau$, contradicting Assumption~\ref{as:disjoint}.
+\end{proof}
+
+A delegated composite answers over all of $\dataf(c)$, so its answer must be filtered
+to what the claim semantics admits. The engine can always check the claim of $c$, as
+$\alpha_c$ is known once $c$ is retrieved. For a BGP $B'$ we therefore keep the solutions
+whose matched triples $c$ all claims,
+\[
+  \Phi_c(\Omega) \;=\; \bigl\{\, \mu \in \Omega \;\bigm|\; c \text{ claims } \mu(t)
+  \text{ for every } t \in B' \,\bigr\},
+\]
+and evaluate the rest of $B'$ over the other sources. This refines
+Definition~\ref{def:delegation} for $S = \{c\}$:
+\[
+  R \;:=\; \Phi_c\bigl(\ev{B'}{\dataf(c)}\bigr) \;\cup\;
+  \ev{B'}{G^{\alpha}_{\Dd \setminus \{c\}}}.
+\]
+Unclaimed triples held by $c$ are also held by the sources it aggregates, so they are
+found by the second term, provided these sources are reachable.
+
+\begin{assumption}[Reachable aggregation]
+\label{as:agg-reach}
+If a composite $c$ is in $\Dd$, so is every source it aggregates: $\Dd_c \subseteq \Dd$.
+\end{assumption}
+
+This holds, for instance, when a composite exposes its sources and $\disc$ follows them.
+What can go wrong is a solution that the two terms split between them.
+
+\begin{definition}[Claim-uniform sub-query]
+\label{def:uniform}
+Let $G = G^{\alpha}_{\Dd}$. A BGP $B'$ is \emph{claim-uniform} for a composite $c$ if
+every $\mu \in \ev{B'}{G}$ has $c$ claim either all of $\mu(t)$, $t \in B'$, or none of
+them.
+\end{definition}
+
+\begin{theorem}[Delegation to a claim]
+\label{th:claim-delegation}
+Under Assumptions~\ref{as:disjoint} and~\ref{as:agg-reach}, let $B' \subseteq B$ be
+non-empty, $c \in \Dd(T)$ a composite, and $G = G^{\alpha}_{\Dd}$. Then
+$R = \ev{B'}{G}$ if and only if $B'$ is claim-uniform for $c$; in that case delegating
+$B'$ to $c$ is correct. Consequently, whenever claim uniformity follows from $B'$ and
+$\alpha_c$ alone, correctness is determined at $T$, whether or not $F(T) = \emptyset$.
+\end{theorem}
+
+\begin{proof}
+Write $G_c := G^{\alpha}_{\{c\}}$ and $G_{\neg c} := G^{\alpha}_{\Dd \setminus \{c\}}$.
+
+($R \subseteq \ev{B'}{G}$.) A triple of $\dataf(c)$ that $c$ claims is admitted from
+$c$ by the first clause of \eqref{eq:admitted}, so a solution kept by $\Phi_c$ maps into
+$G_c \subseteq G$. The second term maps into $G_{\neg c} \subseteq G$.
+
+($\ev{B'}{G} \subseteq R$ under uniformity.) Let $\mu \in \ev{B'}{G}$. If $c$ claims every
+$\mu(t)$, each is admitted only from $c$ by Lemma~\ref{lem:exclusive}, hence lies in
+$\dataf(c)$; so $\mu \in \ev{B'}{\dataf(c)}$ and $\Phi_c$ keeps it. If $c$ claims no
+$\mu(t)$, let $\tau = \mu(t)$ be admitted from $d$. If $d \neq c$, then
+$\tau \in G_{\neg c}$. If $d = c$, then $\tau$ is unclaimed, as $c$ does not claim it and
+by \eqref{eq:admitted} no other source does; it is held by some $d' \in \Dd_c$, which lies
+in $\Dd$ by Assumption~\ref{as:agg-reach} and admits $\tau$, so again
+$\tau \in G_{\neg c}$. Hence $\mu \in \ev{B'}{G_{\neg c}}$.
+
+(Necessity.) Let $\mu \in \ev{B'}{G}$ mix claimed and unclaimed triples, with $c$
+claiming $\mu(t_1)$ but not $\mu(t_2)$. Then $\Phi_c$ discards $\mu$, and
+$\mu(t_1) \notin G_{\neg c}$ by Lemma~\ref{lem:exclusive}, so $\mu \notin R$.
+
+Given $R = \ev{B'}{G}$, $R \bowtie \ev{B \setminus B'}{G} = \ev{B}{G}$, which is
+correctness. Finally, $\Phi_c$ depends only on $\alpha_c$, and the argument quantifies over
+every source of $\Dd$, discovered or not; so whenever uniformity is guaranteed by $B'$ and
+$\alpha_c$ alone, the verdict is the same in every state observationally equivalent to
+$W(T)$.
+\end{proof}
+
+Theorem~\ref{th:claim-delegation} pins down what remains of the adversary of
+Theorem~\ref{th:undetermined}: it wins only by building a solution that mixes a triple
+claimed by $c$ with one that is not, so that the join crosses the boundary of $c$. Claim
+uniformity is exactly the absence of such solutions. A triple placed behind the frontier
+that $c$ claims is admitted only from $c$, and one that $c$ does not claim is found by the
+second term; neither breaks a uniform sub-query.
+
+The simplest uniform case needs no knowledge of the data at all: if $c$ claims every
+triple matching every pattern of $B'$, all solutions are fully claimed. We say $B'$ is
+then \emph{within the claim} of $c$; the second term of $R$ is empty and
+$\Phi_c$ is the identity. Under namespace claims (Section~\ref{sec:namespace-claims}) this
+requires constant subjects in the namespace of $c$. Uniformity is much weaker: it only
+forbids mixed solutions, and Section~\ref{sec:shapes} shows that subject-determined
+claims guarantee it for star-shaped sub-queries regardless of the data. A composite that
+claims nothing has $\Phi_c(\Omega) = \emptyset$, so delegating to it is vacuous: we
+delegate only to claimants, and a single document only as a degenerate composite that
+declares a claim.
 
 
 \todo{Lemma on how theorem 1 holds if we filter any sources in scope 
@@ -641,6 +751,166 @@ nothing given the assumptions / semantics of our model}
   in composite resource on B prime
 \end{proof}
 
+
+\subsection{Monotonicity}
+\label{sec:monotonicity}
+
+In classical discovery-based querying, a result is sound the moment it is produced: as
+$\Dd(T)$ grows, so does $G_{\Dd(T)}$, and BGP evaluation is monotone. Claims break this,
+as discovering a composite can disregard triples that were already used. We make this
+precise for the answer an engine can compute at time $T$, which can only take the claims
+of retrieved composites into account.
+
+\begin{definition}[Answer at time $T$]
+\label{def:answer-at-T}
+For a discovery state $W(T)$, with claims under $\alpha$, let
+\[
+  G^{T} \;=\; \bigcup_{d \in \Dd(T)}
+  \bigl\{\, t \in \dataf(d) \;\bigm|\; d \text{ claims } t
+  \ \text{ or no } c \in \Dd(T) \text{ claims } t \,\bigr\},
+\]
+and $\Omega(T) = \ev{B}{G^{T}}$. The answer is \emph{monotone} if
+$\Omega(T) \subseteq \Omega(T')$ whenever $T \leq T'$.
+\end{definition}
+
+Once discovery is complete, $\Dd(T) = \Dd$ by Lemma~\ref{lem:frontier} and
+$G^{T} = G^{\alpha}_{\Dd}$, so $\Omega(T)$ is the answer under claims. Without claims,
+$G^{T} = G_{\Dd(T)}$ and $\Omega$ is monotone.
+
+\begin{proposition}[Claims break monotonicity]
+\label{prop:non-monotone}
+There is a setting with times $T \leq T'$ such that $\Omega(T) \not\subseteq \Omega(T')$.
+\end{proposition}
+
+\begin{proof}
+Take $B = \{(?s, p, ?o)\}$ and a composite $c$ that claims $\tau = (s, p, o)$. Let a
+base source $d \notin \Dd_c$ hold $\tau$ while $\tau \notin \dataf(c)$, and let $d$ be
+retrieved before $c$. If $\Dd(T) = \{d\}$, then
+$\mu = \{?s \mapsto s,\ ?o \mapsto o\} \in \Omega(T)$. Once $c \in \Dd(T')$, $c$ claims
+$\tau$, so $\tau$ is no longer admitted from $d$, nor from $c$ as $\tau \notin \dataf(c)$.
+Hence $\mu \notin \Omega(T')$.
+\end{proof}
+
+The triple $\tau$ is claimed by $c$ but held only elsewhere; under namespace claims it is
+a statement by $d$ about a resource in the namespace of $c$. It is exactly the kind of
+triple the adversary of Theorem~\ref{th:undetermined} places behind
+the frontier, and exactly what Theorem~\ref{th:claim-delegation} needs disregarded.
+Non-monotonicity is thus the price of delegation under incomplete discovery rather than
+an artefact of our definitions.~\todo{Formalise as a necessity result?} It is, however,
+confined to such triples.
+
+\begin{definition}[Covered triple]
+\label{def:covered}
+A triple $t$ is \emph{covered} if every composite $c \in \Dd$ that claims $t$ also holds
+it, $t \in \dataf(c)$.
+\end{definition}
+
+\begin{lemma}[Covered solutions are stable]
+\label{lem:covered-stable}
+Under Assumption~\ref{as:disjoint}, let $\mu \in \Omega(T)$ be such that $\mu(t)$ is
+covered for every $t \in B$. Then $\mu \in \Omega(T')$ for every $T' \geq T$, and
+$\mu \in \ev{B}{G^{\alpha}_{\Dd}}$.
+\end{lemma}
+
+\begin{proof}
+Let $t \in B$ and $\tau = \mu(t) \in G^{T}$, so some $d \in \Dd(T)$ holds $\tau$. By
+Assumption~\ref{as:disjoint} at most one source claims $\tau$. If no source of
+$\Dd(T')$ claims it, $\tau$ is admitted at $T'$ from $d \in \Dd(T')$. Otherwise its
+claimant $c \in \Dd(T')$ holds $\tau$, as $\tau$ is covered, and $\tau$ is admitted from
+$c$. Hence $\mu(B) \subseteq G^{T'}$, and $\mu \in \Omega(T')$ as
+$\mathrm{dom}(\mu) = \mathrm{var}(B)$. The same argument with $\Dd$ in place of
+$\Dd(T')$ gives $\mu \in \ev{B}{G^{\alpha}_{\Dd}}$.
+\end{proof}
+
+Which triples are covered depends on admissibility. For namespace claims it follows from
+where a triple is stored, which Section~\ref{sec:namespace-claims} uses to resolve claim
+status in practice.
+
+\subsection{Subject-Namespace Claims}
+\label{sec:namespace-claims}
+
+The results so far hold for any admissibility function satisfying
+Assumption~\ref{as:disjoint}. Two further questions need more structure: when a
+sub-query whose patterns have variable subjects can be delegated, and how an engine
+settles claim status in practice. Both rely on claims that are decided by the subject of
+a triple alone.
+
+\begin{definition}[Subject-determined claims]
+\label{def:subject-determined}
+Claims are \emph{subject-determined} if for every composite $c$ there is a set of terms
+$S_c$ such that $\alpha_c(t) = 1$ iff $\mathrm{subj}(t) \in S_c$.
+\end{definition}
+
+For this work we instantiate admissibility by namespaces, as discovery-based querying on
+the Web identifies sources by IRI. With $\mathrm{ns}(c)$ the namespace of the IRI of $c$,
+\[
+  \rho_c(t) = 1 \iff \mathrm{subj}(t) \in \mathrm{ns}(c),
+\]
+and a composite that declares claims its whole namespace, $\sigma_c = \rho_c$. Claims are
+then subject-determined with $S_c = \mathrm{ns}(c)$. A composite with namespace
+\url{http://example.org/} thus claims every triple whose subject starts with it.
+$\rho_c$ depends only on the identity of $c$, so the engine knows it as soon as it
+discovers $c$, whatever lies behind the frontier. Admissibility bounds what $c$ may
+\emph{claim}, not what it may \emph{aggregate}; for the latter, write
+$\mathrm{iri}(d)$ for the IRI of a source $d$.
+
+\begin{assumption}[Namespace aggregation]
+\label{as:ns-aggregation}
+A composite aggregates every source in its namespace: if
+$\mathrm{iri}(d) \in \mathrm{ns}(c)$ then $d \in \Dd_c$.~\todo{align with subweb paper}
+\end{assumption}
+
+The picture is that of horizontal partitioning, with each composite the sole source of
+record for a region of the subject space. The difference is that the partitioning is
+declared by the participants rather than imposed by a coordinator, so no global catalogue
+of it exists and both the participants and the partitioning are discovered during
+execution. Assumption~\ref{as:disjoint} holds when no composite's namespace extends
+another's. Disjoint aggregation alone does not suffice: a composite on
+\url{http://example.org/} and one on \url{http://example.org/a/} may aggregate disjoint
+documents and still both claim a triple about \url{http://example.org/a/x}.
+
+\subsubsection{Resolving claim status}
+\label{sec:claim-status}
+
+Call $t \in \dataf(d)$ \emph{local} if no composite namespace separates its subject from
+its source: for every composite $c$, $\mathrm{subj}(t) \in \mathrm{ns}(c)$ implies
+$\mathrm{iri}(d) \in \mathrm{ns}(c)$. Under Assumption~\ref{as:ns-aggregation} a local
+triple is covered, since a composite claiming it has $\mathrm{subj}(t) \in \mathrm{ns}(c)$,
+hence $d \in \Dd_c$ and $t \in \dataf(c)$. By Lemma~\ref{lem:covered-stable}, solutions
+built from local triples are sound as soon as they are produced; only solutions using a
+non-local triple, a statement about a resource in another namespace, can be invalidated
+by later discovery.
+
+\begin{remark}[Resolving claim status by request]
+\label{rem:claim-lookup}
+In practice the engine need not wait for discovery to settle whether a non-local triple
+$t$ is claimed. By Assumption~\ref{as:disjoint} at most one composite can claim $t$, and
+under namespace admissibility its location is fixed by $\mathrm{subj}(t)$ alone: it is the
+composite, if any, whose namespace contains $\mathrm{subj}(t)$. The engine can therefore
+resolve the claim status of $t$ with a request to this possible aggregator, for example
+by looking up an advertised composite along the path of $\mathrm{subj}(t)$ and, if one
+claims $t$, asking it whether it holds $t$. Including these lookups in $\disc$ makes the
+aggregator part of $\reach_B(W)$, so the outcome agrees with the answer under claims. An
+engine that resolves the status of every non-local triple before using it emits only
+solutions that remain valid, at the cost of one lookup per foreign namespace and one
+membership check per non-local triple, rather than a wait for the frontier to empty.
+This mirrors authoritative reasoning, where authority is decided per term by
+dereferencing~\cite{hogan2009authoritative}.~\todo{Mechanism for advertising a
+composite, and for establishing that none exists: storage description, link header?}
+\end{remark}
+
+\subsubsection{Star- and chain-shaped sub-queries}
+\label{sec:shapes}
+
+Subject-determined claims make the claim status of a matched triple a function of the
+binding of its subject. For a star whose patterns share the subject variable $?s$, all
+triples matched by a solution $\mu$ have subject $\mu(?s)$, so either $c$ claims all of
+them or none. The star is therefore claim-uniform for every composite, whatever the data,
+and Theorem~\ref{th:claim-delegation} applies at any time $T$; $\Phi_c$ keeps the
+solutions with $\mu(?s) \in S_c$. Patterns with distinct subject variables, as in chains,
+admit mixed solutions.~\todo{Formalise for stars and size-2
+chains}
+
 \todo{Section indicating how anchor variables are required to correctly filter out partial results}
 \todo{This then makes stars and size 2 chains attractive candidates to reduce client work, while
 longer chains can't really be pruned.}
@@ -650,7 +920,27 @@ Given the capability of delegating these sub queries, we must now move to the sy
 our problem. Specifically, due to the dynamic discovery of composite sources and the uncertainty
 of capabilities of these sources, using a static query plan is difficult.
 
-\todo{Example showing how we can't integrate a sub-query if we have a static plan}
+\todo{Text referencing Figure~\ref{fig:integration}}
+
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{0.37\columnwidth}
+    \centering
+    \includegraphics{figures/static-plan.pdf}
+    \caption{Static plan: $t_1$ and $t_2$ lie in different subtrees, so $c$ cannot be
+      added to the plan.}
+    \label{fig:static-plan}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.6\columnwidth}
+    \centering
+    \includegraphics{figures/eddy-join-state.pdf}
+    \caption{Eddy: routing history split $t_3$ into $t_3'$ and $t_3''$ across the joins,
+      so the $t_1 t_2$ tuples of $c$ probe only $t_3'$.}
+    \label{fig:eddy-join-state}
+  \end{subfigure}
+  \caption{\todo{caption}}
+  \label{fig:integration}
+\end{figure}
 
 \todo{Show that even if we use many alternative plans we can still run into issues with overlapping
 composite sources}
@@ -661,6 +951,7 @@ composite sources}
 \subsection{Correctness}
 
 \subsubsection{Overlapping Sources}
+\label{sec:overlap}
 Correctness when doing overlapping sources is difficult blabla, cases: Overlapping domain,
 overlapping triple patterns, both, neither.
 Given the time dimension, how do we decide what is possible

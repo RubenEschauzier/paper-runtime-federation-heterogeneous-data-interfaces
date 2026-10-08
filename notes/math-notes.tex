@@ -13,10 +13,12 @@
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
 \newtheorem{corollary}{Corollary}
+\newtheorem{assumption}{Assumption}
 \theoremstyle{remark}
 \newtheorem*{remark}{Remark}
 
 \newcommand{\Dd}{\mathcal{D}}
+\newcommand{\Du}{\mathbb{D}}
 \newcommand{\Tt}{\mathcal{T}}
 \newcommand{\dataf}{\mathsf{data}}
 \newcommand{\disc}{\mathsf{disc}}
@@ -210,6 +212,7 @@ a ``source assignment'': FedQPL Def.~8 already uses that term for a query plan.
 \end{remark}
 
 \begin{definition}[Delegation]
+\label{def:delegation}
 Let $B$ be a BGP and $B' \subseteq B$ the delegated fragment. Let $S \subseteq \Dd$ be a
 set of sources such that every $d \in S$ provides an interface $I_d = (L_d, \varrho_d)$
 with $B' \in L_d$; that is, each delegated source accepts $B'$ as a \emph{single}
@@ -500,6 +503,206 @@ Prop.~2), so that precedent is citable rather than new.
 Coverage and the namespace scope claim are one mechanism: a claim over $N$ covers
 exactly the sources whose data lies in $S_N$. Coverage is the extensional presentation,
 the scope claim the intensional one.
+\end{remark}
+
+\section{Authority claims: generic claim map and anchor mapping}
+\label{sec:claims}
+
+Here $\Du$ is the universe of sources, of which $\Dd$ above is the reachable part.
+
+\begin{definition}[Composite source]
+\label{def:composite}
+A source $c \in \Du$ is \emph{composite} when it holds no data of its own and is
+instead given by a set $\Dd_c \subseteq \Du$ of sources it aggregates. It contains
+\emph{all} of their data,
+\[
+  \dataf(c) \;=\; \bigcup_{d \in \Dd_c} \dataf(d),
+\]
+and a request to $c$ is evaluated over all of it. The aggregation relation is
+well-founded: no source aggregates itself, directly or through other composites.
+Sources that are not composite are \emph{base} sources.
+\end{definition}
+
+\begin{remark}[Degenerate composite]
+\label{rem:degenerate}
+If $\Dd_c = \{d\}$ with $d$ a base source, then $\dataf(c) = \dataf(d)$: as far as its
+data goes, $c$ \emph{is} $d$. If $c$ moreover claims nothing, it is interchangeable
+with $d$ under every definition below (same data, same admitted data, same answers).
+In proofs we may therefore treat a base source as a degenerate composite that claims
+nothing, and a single document that does claim as a degenerate composite that does.
+\end{remark}
+
+\begin{definition}[Claim, claim map]
+\label{def:authoritativeness}
+A composite source $c$ may \emph{declare} a claim, given by a selector
+$\sigma_c : 2^{\Tt} \to 2^{\Tt}$ that is \emph{triple-wise}, i.e.\
+$\sigma_c(G) = \{\, t \in G \mid \sigma_c(\{t\}) = \{t\} \,\}$. We say $c$
+\emph{claims} a triple $\tau$ when $\sigma_c(\{\tau\}) = \{\tau\}$. The claim does
+not restrict what $c$ returns: $c$ still returns all of $\dataf(c)$. It is a guarantee
+about the claimed triples only: they are to be taken from $c$ and from no other
+source. Base sources cannot claim. Write $\mathcal{C} \subseteq \Du$ for the
+composite sources that declare.
+
+A \emph{claim map} $\kappa : \Du \to (2^{\Tt} \to 2^{\Tt})$ assigns to every source a
+triple-wise selector $\kappa_d$, the triples it claims, with $\kappa_d \equiv
+(G \mapsto \emptyset)$ for every base source $d$. Taking declarations at face value
+gives the \emph{naive} claim map
+\[
+  \kappa^{0}_d \;=\;
+  \begin{cases}
+    \sigma_d, & \text{if } d \in \mathcal{C},\\[2pt]
+    G \mapsto \emptyset, & \text{otherwise.}
+  \end{cases}
+\]
+Given a claim map $\kappa$, the \emph{admitted data} of a source is
+\begin{equation}
+  \label{eq:theta}
+  \theta_\kappa(d, G) \;=\;
+  \bigl\{\, t \in G \;\bigm|\; t \in \kappa_d(G)
+  \ \text{ or }\ t \notin \textstyle\bigcup_{c \in \Du} \kappa_c(G) \,\bigr\}.
+\end{equation}
+A claimed triple is admitted only from a source that claims it; an unclaimed triple
+is admitted from wherever it occurs. Evaluation is carried out over admitted data
+rather than stored data: for $A \subseteq \Du$ we replace $G_A$ of
+Definition~\ref{def:delegation} by
+\[
+  G^{\kappa}_A \;=\; \bigcup_{d \in A} \theta_\kappa\bigl(d, \dataf(d)\bigr).
+\]
+\end{definition}
+
+\begin{remark}[Base sources guarantee nothing]
+A base source $d$ has $\kappa_d \equiv \emptyset$, so $\theta_\kappa(d, \dataf(d))$ is
+just its data minus whatever some composite claims. It contributes data but never a
+guarantee about it. A composite contributes everything it contains except triples
+claimed by \emph{other} composites, and guarantees only its claim. No data is lost
+when a claim is withdrawn: the triples simply become unclaimed and are admitted
+everywhere.
+\end{remark}
+
+\noindent
+Nothing so far prevents a source from claiming data it has no business speaking for:
+under $\kappa^0$ any composite can claim, say, all of DBpedia and thereby silence every
+other source on it.
+
+\begin{definition}[Anchor mapping]
+\label{def:anchor}
+An \emph{anchor mapping} $\rho$ assigns to every source $d$ a triple-wise selector
+$\rho_d$, its \emph{anchor}: the triples $d$ is entitled to claim. The anchor is part
+of the setting, not of any declaration: a source cannot choose its own. The
+\emph{anchored} claim map is
+\[
+  \alpha_d(G) \;=\; \kappa^{0}_d(G) \,\cap\, \rho_d(G),
+\]
+so a source claims what it both declares and is entitled to. From here on we evaluate
+over $G^{\alpha}_A$, with $\theta_\alpha$ given by \eqref{eq:theta}.
+\end{definition}
+
+\noindent
+$\alpha$ is a claim map in the sense of Definition~\ref{def:authoritativeness}: an
+intersection of triple-wise selectors is triple-wise, and a base source has
+$\kappa^0_d \equiv \emptyset$, hence $\alpha_d \equiv \emptyset$. It only withdraws
+claims, never adds them, since $\alpha_d \subseteq \kappa^0_d$ pointwise. No case split
+is needed: a source that does not declare claims nothing, and an illegitimate claim
+shrinks to its legitimate part rather than being rejected whole. A composite claiming
+both DBpedia and its own namespace keeps the latter.
+
+\begin{remark}[Namespace instantiation]
+On the Web, take $\mathrm{ns}(c)$ the namespace of the IRI of $c$ and
+\[
+  \rho_c(G) \;=\; \{\, t \in G \mid \mathrm{subj}(t) \in \mathrm{ns}(c) \,\}.
+\]
+$\rho_c$ depends only on the identity of $c$, so the engine knows it as soon as it
+sees $c$, whatever remains behind the frontier. The anchor constrains what $c$ may
+\emph{claim}, not what it may \emph{aggregate}; a requirement that $\Dd_c$ consist of
+documents in $\mathrm{ns}(c)$ belongs to Definition~\ref{def:composite} or to the
+instantiation, not here.
+\end{remark}
+
+\begin{assumption}[Disjoint anchors]
+\label{as:disjoint}
+Distinct composites have disjoint anchors: for $c \neq c'$,
+$\rho_c(G) \cap \rho_{c'}(G) = \emptyset$ for every $G$.
+\end{assumption}
+
+\noindent
+As $\alpha_c \subseteq \rho_c$, it follows that no triple is claimed under $\alpha$ by
+two distinct sources, which is the form in which the assumption is used below. It is a
+property of the world rather than of what sources declare: for namespaces it says that
+no composite's namespace extends another's, since prefixes neither of which extends the
+other select disjoint sets of subjects. Relaxing it is the overlapping-sources case.
+
+\begin{lemma}[Claimed triples occur only in their claimant]
+\label{lem:exclusive}
+Under Assumption~\ref{as:disjoint}, let $c$ claim $\tau$ under $\alpha$. Then for every
+source $d \neq c$, $\tau \notin \theta_\alpha(d, \dataf(d))$. Consequently, for every
+$A \subseteq \Du$, $\tau \in G^{\alpha}_A$ implies $c \in A$ and $\tau \in \dataf(c)$.
+\end{lemma}
+
+\begin{proof}
+Suppose $\tau \in \theta_\alpha(d, \dataf(d))$ for some $d \neq c$. Then
+$\tau \in \dataf(d)$, and as $\alpha_c$ is triple-wise,
+$\tau \in \alpha_c(\dataf(d)) \subseteq \bigcup_{c'} \alpha_{c'}(\dataf(d))$. So the
+second clause of \eqref{eq:theta} fails and the first must hold: $d$ claims $\tau$,
+contradicting Assumption~\ref{as:disjoint}. Hence $\tau \in G^{\alpha}_A$ can only be
+admitted from $c$, which requires $c \in A$ and $\tau \in \dataf(c)$.
+\end{proof}
+
+\begin{definition}[Pattern within a claim]
+\label{def:within}
+A triple pattern $t$ is \emph{within the claim} of a composite $c$ if $c$ claims every
+triple matching $t$: $\alpha_c(\{\mu(t)\}) = \{\mu(t)\}$ for every $\mu$ with
+$\mathrm{dom}(\mu) = \mathrm{var}(t)$. A BGP is within the claim of $c$ if each of its
+patterns is.
+\end{definition}
+
+\begin{theorem}[Delegation to a claim]
+\label{thm:claim-delegation}
+Under Assumption~\ref{as:disjoint}, let $B' \subseteq B$ be non-empty and within the
+claim of a composite $c \in \Dd(T)$, and let $\Dd = \reach(W)$. Then delegating $B'$ to
+$S = \{c\}$ is correct with respect to $G^{\alpha}_{\Dd}$, and this holds at every
+time $T$, whether or not $F(T) = \emptyset$.
+\end{theorem}
+
+\begin{proof}
+Write $G_d := \theta_\alpha(d, \dataf(d))$ and $G := G^{\alpha}_{\Dd}$. Every triple
+matching a pattern of $B'$ is claimed by $c$, so by Lemma~\ref{lem:exclusive}:
+\begin{enumerate}[label=(\roman*)]
+  \item $\ev{t}{G_d} = \emptyset$ for every $t \in B'$ and every $d \neq c$;
+  \item every triple of $\dataf(c)$ matching some $t \in B'$ is claimed by $c$ and by no
+        one else, hence lies in $G_c$ by the first clause of \eqref{eq:theta}; with
+        $G_c \subseteq \dataf(c)$ this gives $\ev{B'}{\dataf(c)} = \ev{B'}{G_c}$.
+\end{enumerate}
+For a BGP, $\mu \in \ev{B'}{G}$ iff $\mu(t) \in G$ for every $t \in B'$; by (i) each
+such $\mu(t)$ lies in $G_c$, so $\ev{B'}{G} = \ev{B'}{G_c} = \ev{B'}{\dataf(c)}$ by (ii).
+The second term of $R$ is $\ev{B'}{G^{\alpha}_{\Dd \setminus \{c\}}} = \emptyset$ by (i),
+as $B' \neq \emptyset$. Hence $R = \ev{B'}{\dataf(c)} = \ev{B'}{G}$, and
+\[
+  R \bowtie \ev{B \setminus B'}{G} \;=\; \ev{B'}{G} \bowtie \ev{B \setminus B'}{G}
+  \;=\; \ev{B}{G}.
+\]
+Nothing in the argument refers to $\Dd(T)$ beyond $c \in \Dd(T)$: (i) holds for every
+$d \neq c$, discovered or behind the frontier.
+\end{proof}
+
+\begin{remark}[Why this escapes Theorem~\ref{thm:nocert}]
+The adversary of Theorem~\ref{thm:nocert} wins by placing a triple behind the frontier
+that joins across the delegation boundary. If that triple matches a pattern of $B'$ it
+is claimed by $c$, so it is not admitted anywhere but at $c$ and cannot join. The
+claim removes exactly the adversary's freedom over the data behind the frontier.
+\end{remark}
+
+\begin{remark}[We never delegate to base sources]
+Definition~\ref{def:within} requires a claim, and base sources have
+$\kappa_d \equiv \emptyset$, so no non-empty BGP is within the claim of a base source.
+By Remark~\ref{rem:degenerate} a single document can still be a delegation target, but
+only by being a degenerate composite that declares a claim.
+\end{remark}
+
+\begin{remark}[What is still open]
+Definition~\ref{def:within} is strong: for subject-namespace claims a pattern is within
+the claim only if its subject is a constant in the namespace. Patterns with a variable
+subject need the anchor-variable argument, filtering $c$'s answer to solutions whose
+matched triples $c$ claims.
 \end{remark}
 
 \end{document}

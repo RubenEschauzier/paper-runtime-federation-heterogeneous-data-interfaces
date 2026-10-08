@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="84pt" height="110pt" viewBox="0 0 84 110"
+     font-family="Linux Libertine O, DejaVu Sans, serif" font-size="7">
+  <!-- Static plan ((t1 join t3) join t2), fixed before execution; composite c answers t1 join t2,
+       but t1 and t2 lie in different subtrees, so c cannot be added to the plan. -->
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5"
+            orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#000"/>
+    </marker>
+  </defs>
+
+  <!-- triple pattern backgrounds -->
+  <g fill="#e4e4e4" stroke="none">
+    <rect x="7" y="47" width="14" height="12" rx="3"/>
+    <rect x="31" y="47" width="14" height="12" rx="3"/>
+    <rect x="53" y="25" width="14" height="12" rx="3"/>
+  </g>
+
+  <!-- plan edges -->
+  <g stroke="#000" stroke-width="0.6" fill="none">
+    <line x1="38.8" y1="12.4" x2="29.2" y2="25.6"/>
+    <line x1="45.9" y1="11.9" x2="57" y2="25"/>
+    <line x1="22.8" y1="34.5" x2="15" y2="47"/>
+    <line x1="29.2" y1="34.5" x2="37" y2="47"/>
+  </g>
+
+  <!-- join operators -->
+  <g stroke="#000" stroke-width="0.6" fill="#fff">
+    <circle cx="42" cy="8" r="5.5"/>
+    <circle cx="26" cy="30" r="5.5"/>
+  </g>
+  <g font-family="DejaVu Sans" font-size="7" text-anchor="middle">
+    <text x="42" y="10.5">⋈</text>
+    <text x="26" y="32.5">⋈</text>
+  </g>
+
+  <!-- triple patterns -->
+  <g font-style="italic" text-anchor="middle">
+    <text x="13" y="55">t<tspan font-size="5" font-style="normal" dy="1.5">1</tspan></text>
+    <text x="38" y="55">t<tspan font-size="5" font-style="normal" dy="1.5">3</tspan></text>
+    <text x="59" y="33">t<tspan font-size="5" font-style="normal" dy="1.5">2</tspan></text>
+  </g>
+
+  <!-- composite source found at T -->
+  <rect x="20" y="80" width="48" height="20" fill="#fff" stroke="#000" stroke-width="0.6"/>
+  <text x="44" y="88.5" text-anchor="middle" font-size="6.5">composite <tspan font-style="italic">c</tspan></text>
+  <text x="44" y="96.5" text-anchor="middle" font-size="6.5"><tspan font-style="italic">t</tspan><tspan font-size="4.5" dy="1.3">1</tspan><tspan dy="-1.3" dx="1.2" font-family="DejaVu Sans" font-size="6">⋈</tspan><tspan font-style="italic" dx="1.2">t</tspan><tspan font-size="4.5" dy="1.3">2</tspan></text>
+  <text x="44" y="107.5" text-anchor="middle" font-size="6" font-style="italic">found at T</text>
+
+  <!-- attempts to attach c to t1 and t2: both crossed out -->
+  <g stroke="#000" stroke-width="0.6" stroke-dasharray="2,1.5" fill="none">
+    <line x1="30" y1="80" x2="17.5" y2="60.5" marker-end="url(#arr)"/>
+    <line x1="56" y1="80" x2="60" y2="38.5" marker-end="url(#arr)"/>
+  </g>
+  <g stroke="#b00000" stroke-width="1.4" stroke-linecap="round">
+    <line x1="20.3" y1="67.3" x2="26.7" y2="73.7"/>
+    <line x1="26.7" y1="67.3" x2="20.3" y2="73.7"/>
+    <line x1="54.5" y1="56" x2="61.5" y2="63"/>
+    <line x1="61.5" y1="56" x2="54.5" y2="63"/>
+  </g>
+</svg>
