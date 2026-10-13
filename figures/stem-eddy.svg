@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="146pt" height="110pt" viewBox="0 0 146 110"
+     font-family="Linux Libertine O, DejaVu Sans, serif" font-size="7">
+  <!-- Eddy over SteMs (cf. Raman, Deshpande & Hellerstein, ICDE 2003). Each triple pattern keeps one
+       SteM holding all of its tuples, independent of routing history. When composite c is found at T,
+       the eddy adds a SteM for its t1t2 tuples, routed like any other SteM. -->
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5"
+            orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#000"/>
+    </marker>
+  </defs>
+
+  <!-- inputs -->
+  <g font-style="italic" text-anchor="middle">
+    <text x="4" y="48">t<tspan font-size="5" font-style="normal" dy="1.5">1</tspan></text>
+    <text x="4" y="60">t<tspan font-size="5" font-style="normal" dy="1.5">2</tspan></text>
+    <text x="4" y="72">t<tspan font-size="5" font-style="normal" dy="1.5">3</tspan></text>
+  </g>
+  <g stroke="#000" stroke-width="0.6" fill="none">
+    <line x1="10" y1="46" x2="46.5" y2="54" marker-end="url(#arr)"/>
+    <line x1="10" y1="58" x2="45" y2="58" marker-end="url(#arr)"/>
+    <line x1="10" y1="70" x2="46.5" y2="62" marker-end="url(#arr)"/>
+    <!-- routing to the SteMs -->
+    <line x1="51" y1="49.5" x2="34" y2="25" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <line x1="58" y1="47.5" x2="66" y2="25" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <line x1="64.5" y1="50" x2="96" y2="25" marker-start="url(#arr)" marker-end="url(#arr)"/>
+    <!-- output -->
+    <line x1="64" y1="66.5" x2="82" y2="84" marker-end="url(#arr)"/>
+  </g>
+  <text x="90" y="92" text-anchor="middle" font-size="6">output</text>
+
+  <!-- eddy -->
+  <circle cx="56" cy="58" r="10" fill="#fff" stroke="#000" stroke-width="0.6"/>
+  <text x="56" y="60.5" text-anchor="middle" font-size="6.5">Eddy</text>
+
+  <!-- one SteM per triple pattern -->
+  <g stroke="#000">
+    <rect x="18" y="4" width="28" height="20" fill="#fff" stroke-width="0.6"/>
+    <rect x="21" y="7" width="22" height="14" fill="#eee" stroke-width="0.5"/>
+    <rect x="52" y="4" width="28" height="20" fill="#fff" stroke-width="0.6"/>
+    <rect x="55" y="7" width="22" height="14" fill="#eee" stroke-width="0.5"/>
+    <rect x="86" y="4" width="28" height="20" fill="#fff" stroke-width="0.6"/>
+    <rect x="89" y="7" width="22" height="14" fill="#eee" stroke-width="0.5"/>
+  </g>
+  <g font-style="italic" text-anchor="middle">
+    <text x="32" y="16">t<tspan font-size="5" font-style="normal" dy="1.5">1</tspan></text>
+    <text x="66" y="16">t<tspan font-size="5" font-style="normal" dy="1.5">2</tspan></text>
+    <text x="100" y="16">t<tspan font-size="5" font-style="normal" dy="1.5">3</tspan></text>
+  </g>
+
+  <!-- SteM added for composite c at T -->
+  <rect x="114" y="48" width="28" height="20" fill="#fff" stroke="#000" stroke-width="0.6"
+        stroke-dasharray="2,1.5"/>
+  <rect x="117" y="51" width="22" height="14" fill="#eee" stroke="#000" stroke-width="0.5"/>
+  <text x="128" y="60" text-anchor="middle" font-style="italic">t<tspan font-size="5" font-style="normal" dy="1.5">1</tspan><tspan dy="-1.5">t</tspan><tspan font-size="5" font-style="normal" dy="1.5">2</tspan></text>
+  <line x1="66.5" y1="58" x2="113" y2="58" stroke="#000" stroke-width="0.6"
+        marker-start="url(#arr)" marker-end="url(#arr)"/>
+
+  <!-- composite source found at T, delivering t1t2 tuples -->
+  <rect x="10" y="78" width="46" height="20" fill="#fff" stroke="#000" stroke-width="0.6"/>
+  <text x="33" y="86.5" text-anchor="middle" font-size="6.5">composite <tspan font-style="italic">c</tspan></text>
+  <text x="33" y="94.5" text-anchor="middle" font-size="6.5"><tspan font-style="italic">t</tspan><tspan font-size="4.5" dy="1.3">1</tspan><tspan dy="-1.3" dx="1.2" font-family="DejaVu Sans" font-size="6">⋈</tspan><tspan font-style="italic" dx="1.2">t</tspan><tspan font-size="4.5" dy="1.3">2</tspan></text>
+  <text x="33" y="105.5" text-anchor="middle" font-size="6" font-style="italic">found at T</text>
+  <line x1="40" y1="78" x2="50" y2="67" stroke="#000" stroke-width="0.6"
+        stroke-dasharray="2,1.5" marker-end="url(#arr)"/>
+</svg>

@@ -1,0 +1,39 @@
+\subsection{Preliminaries}
+
+Let $\mathcal{U}$, $\mathcal{B}$, $\mathcal{L}$ and $\mathcal{V}$ be pairwise disjoint
+sets of IRIs, blank nodes, literals and variables. An \emph{RDF triple} is an element of
+$\Tt = (\mathcal{U} \cup \mathcal{B}) \times \mathcal{U} \times
+(\mathcal{U} \cup \mathcal{B} \cup \mathcal{L})$, and an \emph{RDF graph} a finite subset
+of $\Tt$. A \emph{triple pattern} is an element of
+$\mathcal{P} = (\mathcal{U} \cup \mathcal{V}) \times (\mathcal{U} \cup \mathcal{V})
+\times (\mathcal{U} \cup \mathcal{L} \cup \mathcal{V})$ and a \emph{basic graph pattern}
+(BGP) a finite set of triple patterns.
+
+A \emph{solution mapping} is a partial function
+$\mu : \mathcal{V} \to \mathcal{U} \cup \mathcal{B} \cup \mathcal{L}$; we write
+$\mu_\emptyset$ for the one with empty domain, $\Omega$ for a set of solution mappings,
+and $\bowtie$ for their join. Evaluating a BGP $B$ over a graph $G$ distributes over its
+patterns,
+\[
+  \ev{B}{G} \;=\; \bigjoin_{t \in B} \ev{t}{G},
+  \qquad \ev{\emptyset}{G} = \{\mu_\emptyset\},
+\]
+so the empty BGP evaluates to the identity for $\bowtie$.
+
+Blank nodes are existential variables scoped to the document that serialises
+them~\cite{rdf11concepts}: no two sources share one, and none can be referenced in a
+later request~\cite{prudhommeaux2013federated}. We exclude them.
+
+\begin{assumption}[Skolemised sources]
+\label{as:skolem}
+Every source publishes a graph free of blank nodes,
+$\dataf(d) \subseteq \mathcal{U} \times \mathcal{U} \times (\mathcal{U} \cup \mathcal{L})$.
+Blank nodes are replaced by Skolem IRIs~\cite{rdf11concepts}, and a source republishing
+data preserves those minted by its origin.
+\end{assumption}
+
+FedQPL assumes only that members use pairwise disjoint blank
+nodes~\cite{cheng2020fedqpl}. This is exactly what breaks aggregation: a composite
+republishing a document must rename its blank nodes apart, so they no longer denote
+the nodes its origin published. Skolem IRIs survive republication.
+

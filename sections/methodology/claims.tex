@@ -1,0 +1,193 @@
+\subsection{Authority Claims}
+
+From Corollary~\ref{cor:complete-discovery}, runtime federation in discovery-based
+querying is impossible until every source is discovered. With source counts in the
+thousands~\todo{cite here}, this is infeasible.
+
+However, while classical query semantics require all data to be considered in query execution,
+this is not always an intuitive requirement. 
+Consider a federation of product catalogues, in which a manufacturer publishes the
+specifications of the products it makes while resellers and comparison services
+republish copies of them. A query over a product's specification is answered from the
+manufacturer alone. However, if any copies of, different, or wrong specifications exist 
+in the federation, they are considered equally `true'.
+
+
+We will work towards a query execution model that resolves this observation while
+also allowing the delegation of queries \emph{during} query execution.
+First we introduce the concept of a \emph{composite source},
+an aggregating view over sources in $\Du$ which contains no data of its own.
+
+\begin{definition}[Composite source]
+\label{def:composite}
+  Fix a setting \\ $W = \langle \Du, \dataf, \Dd_0, \disc \rangle$. A source $c \in \Du$ is
+  \emph{composite} when it holds no data of its own and is instead given by a set
+  $\Dd_c \subseteq \Du$ of sources it aggregates. It contains all of their data,
+  \[
+    \dataf(c) \;=\; \bigcup_{d \in \Dd_c} \dataf(d),
+  \]
+  and a request to $c$ is evaluated over all of it. Sources that are not composite are
+  \emph{base} sources. We require the aggregation relation to be well-founded 
+  such that no source aggregates itself either directly or through a chain. 
+  Thus, when unfolding $\dataf(c)$ it is expressed
+  in base sources.
+\end{definition}
+
+In the case $\Dd_c = \{d\}$ with $d$ a base source, $\dataf(c) = \dataf(d)$. Then,
+$c$ is equivalent to $d$.
+
+\todo{Add this to after claim is defined} 
+and interchangeable when $c$ claims (Def.~\ref{def:claim}) nothing. 
+
+% as far as its data goes, $c$ \emph{is} $d$. A degenerate composite that claims nothing
+% (Definition~\ref{def:claim}) is interchangeable with $d$ under every definition below, so
+% in proofs we may treat a base source as a degenerate composite that claims nothing, and a
+% single document that does claim as a degenerate composite that does.
+
+
+Next we introduce \emph{claims}, which declare a subset of data the composite source
+aggregates over that matches a certain criterion. 
+
+\begin{definition}[Claim]
+\label{def:claim}
+A composite source $c$ may \emph{declare} a claim. A claim is a \emph{triple-wise}
+criterion $\sigma_c : \Tt \to \{0, 1\}$, an indicator function mapping triples to 
+claim membership.
+
+% i.e.\ $\sigma_c(G) = \{\, t \in G \mid \sigma_c(\{t\}) = \{t\} \,\}$, and $c$
+% \emph{claims} $\tau$ when $\sigma_c(\{\tau\}) = \{\tau\}$: the triples $\sigma_c$ selects
+% are to be taken from $c$ and from no other source. Write $\mathcal{C} \subseteq \Du$ for
+% the composite sources that declare.
+\end{definition}
+
+
+A claim is published with $c$ and thus observed once $c$ is retrieved. 
+The core idea on which our query execution model builds is the \emph{principle of
+exclusive claims}: queries are answered as if every claim were exclusive, that is, as if
+no source other than $c$ held a triple claimed by $c$.
+Like the closed-world assumption, this does not state how the federation environment
+is; it fixes how we answer queries over it. The data need not satisfy it, and on the Web
+it often does not. Definition~\ref{def:claim-semantics} makes the principle precise by
+fixing the answer on any data, and the engine enforces that answer, which we discuss in
+Section~\todo{?}
+
+% Where the data violate it, we answer over the largest part of
+% the data that satisfies it:
+% \[
+%   G^{\alpha}_A \;=\; \bigcup_{d \in A}
+%   \bigl\{\, t \in \dataf(d) \;\bigm|\; d \text{ claims } t
+%   \ \text{ or no } c \in \Dd \text{ claims } t \,\bigr\}.
+% \]
+
+% \begin{proposition}
+% Under Assumption~\ref{as:disjoint}, $G^{\alpha}_{\Dd}$ is obtained by removing from each
+% source exactly the triples Assumption~\ref{as:exclusive} forbids it to hold, and no
+% others.
+% \end{proposition}
+
+Claims indicate that a composite source is the only source for answers for triples that matched
+the claim indicator function. Engines can then reason about this claim to determine
+for what data delegating BGPs to composite sources declaring a claim is correct.
+As an example, in the product catalogue federation,
+the manufacturer declares that statements about its products are to be taken from it
+alone, so that copies held by resellers are disregarded.
+
+Nothing so far prevents a source from claiming data it should not be allowed to. 
+On the Web, any source could claim authority over, for example, DBpedia without being
+affiliated with it, and thereby drop every DBpedia result held elsewhere. We
+therefore bound each claim by what its source is entitled to.
+
+\begin{definition}[Admissibility, effective claim]
+\label{def:admissible}
+An \emph{admissibility function} assigns every composite $c$ a criterion
+$\rho_c : \Tt \to \{0,1\}$, the triples $c$ is entitled to claim. It is part of the
+setting, not of any declaration, and depends only on the triple and the identity of $c$.
+The \emph{effective claim} of $c$ is
+\[
+  \alpha_c(t) \;=\; \sigma_c(t) \cdot \rho_c(t),
+\]
+with $\alpha_d \equiv 0$ for base sources and for composites that declare nothing. A
+source $d$ \emph{claims} $t$ when $\alpha_d(t) = 1$, and the principle of exclusive claims
+is read with effective claims.
+\end{definition}
+
+An illegitimate claim thus shrinks to its admissible part rather than being rejected
+whole: a composite claiming both DBpedia and its own namespace keeps the latter.
+
+\begin{definition}[Claim semantics]
+\label{def:claim-semantics}
+A triple $t \in \dataf(d)$ is \emph{admitted from} $d$ if
+\begin{equation}
+  \label{eq:admitted}
+  \alpha_d(t) = 1 \quad\text{or}\quad \alpha_c(t) = 0 \text{ for all } c \in \Dd \setminus \{d\},
+\end{equation}
+and for $A \subseteq \Dd$ the \emph{claim-respecting graph} is
+\[
+  G^{\alpha}_A \;=\; \bigcup_{d \in A}
+  \{\, t \in \dataf(d) \mid t \text{ is admitted from } d \,\}.
+\]
+The
+\emph{claim semantics} of $B$ is $\ev{B}{G^{\alpha}_{\Dd}}$. It replaces the reference
+answer of Definition~\ref{def:reach}, and correctness of a delegation
+(Definition~\ref{def:delegation}) is measured with $G^{\alpha}_A$ in place of $G_A$.
+\end{definition}
+
+Thus, any claimed triple only occurs within the source that claims it, while unclaimed
+triples are left in the data as-is. If no source claims
+anything, $G^{\alpha}_A = G_A$ and the claim semantics is the reference answer of
+Definition~\ref{def:reach}.
+
+\todo{Possibly tie to literature here about subwebs and relational?}
+
+We keep admissibility abstract until Section~\ref{sec:namespace-claims}, where we
+instantiate it by namespaces; the results in between hold for any admissibility function.
+
+\begin{assumption}[Disjoint claims]
+\label{as:disjoint}
+No triple is claimed by two sources: for $c \neq c'$ and every $t \in \Tt$,
+$\alpha_c(t) \cdot \alpha_{c'}(t) = 0$.
+\end{assumption}
+
+Section~\ref{sec:namespace-claims} gives a sufficient condition for namespace claims. We
+discuss relaxing the assumption in Section~\ref{sec:overlap}.~\todo{What happens if we
+relax this?}
+
+
+
+% \emph{Authority} is the question of \emph{who may speak} about a term. Following the
+% Linked Data principles, the document obtained by dereferencing an IRI is the
+% distinguished source of statements about that IRI. \citet{hogan2009authoritative}
+% made this operational to prevent \emph{ontology hijacking}, and
+% \citet{harth2012completeness} generalised it into a lattice of \emph{authority types}
+% that record whether a triple was retrieved from the document of its subject, its
+% predicate, or its object. Authority is a \emph{filter}: it discards data, and it is
+% chosen by the consumer.
+
+% \emph{Completeness} is the question of \emph{what is guaranteed to be present}. In the
+% relational setting this is Motro's split of a source into an available and an ideal
+% instance~\cite{motro1989integrity}, and Levy's local completeness
+% statements~\cite{levy1996complete,razniewski2011completeness};
+% \citet{darari2013completeness,darari2018management} transported it to RDF as
+% statements $\mathrm{Compl}(P_1 \mid P_2)$ asserting that a source holds every ideal
+% answer to $P_1$ under condition $P_2$. Completeness is an \emph{obligation}: it adds
+% nothing to the data, and it is undertaken by the publisher.
+
+% Neither ingredient alone licenses what we need. Authority alone does not let us skip a
+% source; completeness alone does not let us disregard the statements other sources make
+% about the same subjects. Their conjunction does, and we make that conjunction the one
+% assumption on which the rest of the paper rests.
+
+% \subsubsection{Data model}
+
+% We use the standard model of a Web of Linked Data~\cite{hartig2012foundations},
+% refined with partial documents as in~\cite{bogaerts2021subweb}. Let $\mathcal{U}$,
+% $\mathcal{B}$ and $\mathcal{L}$ be the pairwise disjoint sets of IRIs, blank nodes and
+% literals, and $\Tt = (\mathcal{U} \cup \mathcal{B}) \times \mathcal{U} \times
+% (\mathcal{U} \cup \mathcal{B} \cup \mathcal{L})$ the set of triples. A \emph{Web of
+% Linked Data} (WoLD) is a tuple $W = \langle D, \mathsf{data}, \mathsf{adoc} \rangle$
+% with $D$ a countable set of documents, $\mathsf{data} : D \to 2^{\Tt}$ mapping
+% each document to a finite graph, and $\mathsf{adoc} : \mathcal{U} \rightharpoonup D$
+% the partial dereferencing function. We write $\mathsf{AllData}(W) = \bigcup_{d \in D}
+% \mathsf{data}(d)$, and $G|_S = \{ (s,p,o) \in G \mid s \in S \}$ for the restriction
+% of a graph to subjects drawn from $S \subseteq \mathcal{U}$.
+

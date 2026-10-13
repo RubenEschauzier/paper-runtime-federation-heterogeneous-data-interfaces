@@ -1,0 +1,75 @@
+
+
+\subsection{Monotonicity}
+\label{sec:monotonicity}
+
+In classical discovery-based querying, a result is sound the moment it is produced: as
+$\Dd(T)$ grows, so does $G_{\Dd(T)}$, and BGP evaluation is monotone. Claims break this,
+as discovering a composite can disregard triples that were already used. We make this
+precise for the answer an engine can compute at time $T$, which can only take the claims
+of retrieved composites into account.
+
+\begin{definition}[Answer at time $T$]
+\label{def:answer-at-T}
+For a discovery state $W(T)$, with claims under $\alpha$, let
+\[
+  G^{T} \;=\; \bigcup_{d \in \Dd(T)}
+  \bigl\{\, t \in \dataf(d) \;\bigm|\; d \text{ claims } t
+  \ \text{ or no } c \in \Dd(T) \text{ claims } t \,\bigr\},
+\]
+and $\Omega(T) = \ev{B}{G^{T}}$. The answer is \emph{monotone} if
+$\Omega(T) \subseteq \Omega(T')$ whenever $T \leq T'$.
+\end{definition}
+
+Once discovery is complete, $\Dd(T) = \Dd$ by Lemma~\ref{lem:frontier} and
+$G^{T} = G^{\alpha}_{\Dd}$, so $\Omega(T)$ is the answer under claims. Without claims,
+$G^{T} = G_{\Dd(T)}$ and $\Omega$ is monotone.
+
+\begin{proposition}[Claims break monotonicity]
+\label{prop:non-monotone}
+There is a setting with times $T \leq T'$ such that $\Omega(T) \not\subseteq \Omega(T')$.
+\end{proposition}
+
+\begin{proof}
+Take $B = \{(?s, p, ?o)\}$ and a composite $c$ that claims $\tau = (s, p, o)$. Let a
+base source $d \notin \Dd_c$ hold $\tau$ while $\tau \notin \dataf(c)$, and let $d$ be
+retrieved before $c$. If $\Dd(T) = \{d\}$, then
+$\mu = \{?s \mapsto s,\ ?o \mapsto o\} \in \Omega(T)$. Once $c \in \Dd(T')$, $c$ claims
+$\tau$, so $\tau$ is no longer admitted from $d$, nor from $c$ as $\tau \notin \dataf(c)$.
+Hence $\mu \notin \Omega(T')$.
+\end{proof}
+
+The triple $\tau$ is claimed by $c$ but held only elsewhere; under namespace claims it is
+a statement by $d$ about a resource in the namespace of $c$. It is exactly the kind of
+triple the adversary of Theorem~\ref{th:undetermined} places behind
+the frontier, and exactly what Theorem~\ref{th:claim-delegation} needs disregarded.
+Non-monotonicity is thus the price of delegation under incomplete discovery rather than
+an artefact of our definitions.~\todo{Formalise as a necessity result?} It is, however,
+confined to such triples.
+
+\begin{definition}[Covered triple]
+\label{def:covered}
+A triple $t$ is \emph{covered} if every composite $c \in \Dd$ that claims $t$ also holds
+it, $t \in \dataf(c)$.
+\end{definition}
+
+\begin{lemma}[Covered solutions are stable]
+\label{lem:covered-stable}
+Under Assumption~\ref{as:disjoint}, let $\mu \in \Omega(T)$ be such that $\mu(t)$ is
+covered for every $t \in B$. Then $\mu \in \Omega(T')$ for every $T' \geq T$, and
+$\mu \in \ev{B}{G^{\alpha}_{\Dd}}$.
+\end{lemma}
+
+\begin{proof}
+Let $t \in B$ and $\tau = \mu(t) \in G^{T}$, so some $d \in \Dd(T)$ holds $\tau$. By
+Assumption~\ref{as:disjoint} at most one source claims $\tau$. If no source of
+$\Dd(T')$ claims it, $\tau$ is admitted at $T'$ from $d \in \Dd(T')$. Otherwise its
+claimant $c \in \Dd(T')$ holds $\tau$, as $\tau$ is covered, and $\tau$ is admitted from
+$c$. Hence $\mu(B) \subseteq G^{T'}$, and $\mu \in \Omega(T')$ as
+$\mathrm{dom}(\mu) = \mathrm{var}(B)$. The same argument with $\Dd$ in place of
+$\Dd(T')$ gives $\mu \in \ev{B}{G^{\alpha}_{\Dd}}$.
+\end{proof}
+
+Which triples are covered depends on admissibility. For namespace claims it follows from
+where a triple is stored, which Section~\ref{sec:namespace-claims} uses to resolve claim
+status in practice.

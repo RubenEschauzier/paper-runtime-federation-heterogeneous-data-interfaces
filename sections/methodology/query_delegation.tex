@@ -1,0 +1,117 @@
+\subsection{Delegating Conjunctive Queries}
+Under this query execution model, we now show that correct delegation to composite
+sources can be established under \emph{incomplete} discovery.
+
+\begin{lemma}[Claimed triples occur only in their claimant]
+\label{lem:exclusive}
+Under Assumption~\ref{as:disjoint}, let $c \in \Dd$ claim $\tau$. Then $\tau$ is
+admitted from no source $d \neq c$. Consequently, for every $A \subseteq \Dd$,
+$\tau \in G^{\alpha}_A$ implies $c \in A$ and $\tau \in \dataf(c)$.
+\end{lemma}
+
+\begin{proof}
+Suppose $\tau$ is admitted from some $d \neq c$. The second clause of
+\eqref{eq:admitted} fails, as $c \in \Dd \setminus \{d\}$ claims $\tau$. So the first
+holds and $d$ claims $\tau$, contradicting Assumption~\ref{as:disjoint}.
+\end{proof}
+
+A delegated composite answers over all of $\dataf(c)$, so its answer must be filtered
+to what the claim semantics admits. The engine can always check the claim of $c$, as
+$\alpha_c$ is known once $c$ is retrieved. For a BGP $B'$ we therefore keep the solutions
+whose matched triples $c$ all claims,
+\[
+  \Phi_c(\Omega) \;=\; \bigl\{\, \mu \in \Omega \;\bigm|\; c \text{ claims } \mu(t)
+  \text{ for every } t \in B' \,\bigr\},
+\]
+and evaluate the rest of $B'$ over the other sources. This refines
+Definition~\ref{def:delegation} for $S = \{c\}$:
+\[
+  R \;:=\; \Phi_c\bigl(\ev{B'}{\dataf(c)}\bigr) \;\cup\;
+  \ev{B'}{G^{\alpha}_{\Dd \setminus \{c\}}}.
+\]
+Unclaimed triples held by $c$ are also held by the sources it aggregates, so they are
+found by the second term, provided these sources are reachable.
+
+\begin{assumption}[Reachable aggregation]
+\label{as:agg-reach}
+If a composite $c$ is in $\Dd$, so is every source it aggregates: $\Dd_c \subseteq \Dd$.
+\end{assumption}
+
+This holds, for instance, when a composite exposes its sources and $\disc$ follows them.
+What can go wrong is a solution that the two terms split between them.
+
+\begin{definition}[Claim-uniform sub-query]
+\label{def:uniform}
+Let $G = G^{\alpha}_{\Dd}$. A BGP $B'$ is \emph{claim-uniform} for a composite $c$ if
+every $\mu \in \ev{B'}{G}$ has $c$ claim either all of $\mu(t)$, $t \in B'$, or none of
+them.
+\end{definition}
+
+\begin{theorem}[Delegation to a claim]
+\label{th:claim-delegation}
+Under Assumptions~\ref{as:disjoint} and~\ref{as:agg-reach}, let $B' \subseteq B$ be
+non-empty, $c \in \Dd(T)$ a composite, and $G = G^{\alpha}_{\Dd}$. Then
+$R = \ev{B'}{G}$ if and only if $B'$ is claim-uniform for $c$; in that case delegating
+$B'$ to $c$ is correct. Consequently, whenever claim uniformity follows from $B'$ and
+$\alpha_c$ alone, correctness is determined at $T$, whether or not $F(T) = \emptyset$.
+\end{theorem}
+
+\begin{proof}
+Write $G_c := G^{\alpha}_{\{c\}}$ and $G_{\neg c} := G^{\alpha}_{\Dd \setminus \{c\}}$.
+
+($R \subseteq \ev{B'}{G}$.) A triple of $\dataf(c)$ that $c$ claims is admitted from
+$c$ by the first clause of \eqref{eq:admitted}, so a solution kept by $\Phi_c$ maps into
+$G_c \subseteq G$. The second term maps into $G_{\neg c} \subseteq G$.
+
+($\ev{B'}{G} \subseteq R$ under uniformity.) Let $\mu \in \ev{B'}{G}$. If $c$ claims every
+$\mu(t)$, each is admitted only from $c$ by Lemma~\ref{lem:exclusive}, hence lies in
+$\dataf(c)$; so $\mu \in \ev{B'}{\dataf(c)}$ and $\Phi_c$ keeps it. If $c$ claims no
+$\mu(t)$, let $\tau = \mu(t)$ be admitted from $d$. If $d \neq c$, then
+$\tau \in G_{\neg c}$. If $d = c$, then $\tau$ is unclaimed, as $c$ does not claim it and
+by \eqref{eq:admitted} no other source does; it is held by some $d' \in \Dd_c$, which lies
+in $\Dd$ by Assumption~\ref{as:agg-reach} and admits $\tau$, so again
+$\tau \in G_{\neg c}$. Hence $\mu \in \ev{B'}{G_{\neg c}}$.
+
+(Necessity.) Let $\mu \in \ev{B'}{G}$ mix claimed and unclaimed triples, with $c$
+claiming $\mu(t_1)$ but not $\mu(t_2)$. Then $\Phi_c$ discards $\mu$, and
+$\mu(t_1) \notin G_{\neg c}$ by Lemma~\ref{lem:exclusive}, so $\mu \notin R$.
+
+Given $R = \ev{B'}{G}$, $R \bowtie \ev{B \setminus B'}{G} = \ev{B}{G}$, which is
+correctness. Finally, $\Phi_c$ depends only on $\alpha_c$, and the argument quantifies over
+every source of $\Dd$, discovered or not; so whenever uniformity is guaranteed by $B'$ and
+$\alpha_c$ alone, the verdict is the same in every state observationally equivalent to
+$W(T)$.
+\end{proof}
+
+Theorem~\ref{th:claim-delegation} pins down what remains of the adversary of
+Theorem~\ref{th:undetermined}: it wins only by building a solution that mixes a triple
+claimed by $c$ with one that is not, so that the join crosses the boundary of $c$. Claim
+uniformity is exactly the absence of such solutions. A triple placed behind the frontier
+that $c$ claims is admitted only from $c$, and one that $c$ does not claim is found by the
+second term; neither breaks a uniform sub-query.
+
+The simplest uniform case needs no knowledge of the data at all: if $c$ claims every
+triple matching every pattern of $B'$, all solutions are fully claimed. We say $B'$ is
+then \emph{within the claim} of $c$; the second term of $R$ is empty and
+$\Phi_c$ is the identity. Under namespace claims (Section~\ref{sec:namespace-claims}) this
+requires constant subjects in the namespace of $c$. Uniformity is much weaker: it only
+forbids mixed solutions, and Section~\ref{sec:shapes} shows that subject-determined
+claims guarantee it for star-shaped sub-queries regardless of the data. A composite that
+claims nothing has $\Phi_c(\Omega) = \emptyset$, so delegating to it is vacuous: we
+delegate only to claimants, and a single document only as a degenerate composite that
+declares a claim.
+
+
+\todo{Lemma on how theorem 1 holds if we filter any sources in scope 
+of $c$ both backwards and forwards in time. Mention how the filtering changes
+nothing given the assumptions / semantics of our model}
+\begin{proof}
+  Sketch
+  Part 1. If we filter -> Theorem~\ref{th:correct-delegation} can be directly applied
+  Part 2. Filtering is possible: forward -> easy just take $\disc()$ 
+  and apply setminus of in scope documents.
+  Backwards -> deduplication, we only have duplicate results. So filter any
+  intermediate results at time T in data(scope) and filter any produced results
+  in composite resource on B prime
+\end{proof}
+

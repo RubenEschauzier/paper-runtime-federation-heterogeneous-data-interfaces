@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="150pt" height="78pt" viewBox="0 0 150 78"
+     font-family="Linux Libertine O, DejaVu Sans, serif" font-size="7">
+  <!-- Parallel routing over SteMs with composite c answering t1 ⋈ t2, for t1 ⋈ t2 ⋈ t3. A t3 tuple
+       splits into two copies. The base copy probes the SteMs of t1 and t2; the copy bound for c is
+       stamped with {t1,t2}, which bars it from the base SteMs that c replaces. -->
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5"
+            orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#000"/>
+    </marker>
+  </defs>
+
+  <!-- incoming t3 tuple -->
+  <text x="2" y="41.5" font-style="italic">t<tspan font-size="5" font-style="normal" dy="1.5">3</tspan><tspan font-style="normal" dy="-1.5" dx="1.8">tuple</tspan></text>
+  <line x1="28" y1="39" x2="33" y2="39" stroke="#000" stroke-width="0.6"/>
+  <circle cx="34" cy="39" r="1.3" fill="#000"/>
+
+  <!-- SteMs -->
+  <g stroke="#000">
+    <rect x="48" y="8" width="20" height="16" fill="#fff" stroke-width="0.6"/>
+    <rect x="50.5" y="10.5" width="15" height="11" fill="#eee" stroke-width="0.5"/>
+    <rect x="88" y="8" width="20" height="16" fill="#fff" stroke-width="0.6"/>
+    <rect x="90.5" y="10.5" width="15" height="11" fill="#eee" stroke-width="0.5"/>
+    <rect x="48" y="54" width="20" height="16" fill="#fff" stroke-width="0.6"/>
+    <rect x="50.5" y="56.5" width="15" height="11" fill="#eee" stroke-width="0.5"/>
+  </g>
+  <g font-style="italic" text-anchor="middle">
+    <text x="58" y="18.5">t<tspan font-size="5" font-style="normal" dy="1.5">1</tspan></text>
+    <text x="98" y="18.5">t<tspan font-size="5" font-style="normal" dy="1.5">2</tspan></text>
+    <text x="58" y="64.5">t<tspan font-size="5" font-style="normal" dy="1.5">1</tspan><tspan dy="-1.5">t</tspan><tspan font-size="5" font-style="normal" dy="1.5">2</tspan></text>
+  </g>
+
+  <!-- base copy -->
+  <g stroke="#000" stroke-width="0.6" fill="none">
+    <line x1="34" y1="39" x2="47" y2="18" marker-end="url(#arr)"/>
+    <line x1="68" y1="16" x2="87" y2="16" marker-end="url(#arr)"/>
+    <line x1="108" y1="16" x2="124" y2="16" marker-end="url(#arr)"/>
+  </g>
+  <text x="78" y="12" text-anchor="middle" font-size="5.5">{<tspan font-style="italic">t</tspan><tspan font-size="4" dy="1.2">1</tspan><tspan dy="-1.2">,</tspan><tspan font-style="italic">t</tspan><tspan font-size="4" dy="1.2">3</tspan><tspan dy="-1.2">}</tspan></text>
+  <text x="127" y="18.5" font-size="6">output</text>
+
+  <!-- copy bound for c, stamped with B_c -->
+  <g stroke="#000" stroke-width="0.6" fill="none">
+    <line x1="34" y1="39" x2="47" y2="60" marker-end="url(#arr)"/>
+    <line x1="68" y1="62" x2="124" y2="62" marker-end="url(#arr)"/>
+  </g>
+  <text x="127" y="64.5" font-size="6">output</text>
+
+  <!-- barred: the stamped copy may not probe the base SteMs that c replaces -->
+  <line x1="58" y1="53" x2="58" y2="25.5" stroke="#000" stroke-width="0.6" stroke-dasharray="2,1.5"
+        marker-end="url(#arr)"/>
+  <text x="58" y="42" text-anchor="middle" font-family="DejaVu Sans" font-size="7">✗</text>
+</svg>

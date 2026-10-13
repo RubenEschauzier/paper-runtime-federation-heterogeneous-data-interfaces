@@ -1,0 +1,88 @@
+\subsection{Subject-Namespace Claims}
+\label{sec:namespace-claims}
+
+The results so far hold for any admissibility function satisfying
+Assumption~\ref{as:disjoint}. Two further questions need more structure: when a
+sub-query whose patterns have variable subjects can be delegated, and how an engine
+settles claim status in practice. Both rely on claims that are decided by the subject of
+a triple alone.
+
+\begin{definition}[Subject-determined claims]
+\label{def:subject-determined}
+Claims are \emph{subject-determined} if for every composite $c$ there is a set of terms
+$S_c$ such that $\alpha_c(t) = 1$ iff $\mathrm{subj}(t) \in S_c$.
+\end{definition}
+
+For this work we instantiate admissibility by namespaces, as discovery-based querying on
+the Web identifies sources by IRI. With $\mathrm{ns}(c)$ the namespace of the IRI of $c$,
+\[
+  \rho_c(t) = 1 \iff \mathrm{subj}(t) \in \mathrm{ns}(c),
+\]
+and a composite that declares claims its whole namespace, $\sigma_c = \rho_c$. Claims are
+then subject-determined with $S_c = \mathrm{ns}(c)$. A composite with namespace
+\url{http://example.org/} thus claims every triple whose subject starts with it.
+$\rho_c$ depends only on the identity of $c$, so the engine knows it as soon as it
+discovers $c$, whatever lies behind the frontier. Admissibility bounds what $c$ may
+\emph{claim}, not what it may \emph{aggregate}; for the latter, write
+$\mathrm{iri}(d)$ for the IRI of a source $d$.
+
+\begin{assumption}[Namespace aggregation]
+\label{as:ns-aggregation}
+A composite aggregates every source in its namespace: if
+$\mathrm{iri}(d) \in \mathrm{ns}(c)$ then $d \in \Dd_c$.~\todo{align with subweb paper}
+\end{assumption}
+
+The picture is that of horizontal partitioning, with each composite the sole source of
+record for a region of the subject space. The difference is that the partitioning is
+declared by the participants rather than imposed by a coordinator, so no global catalogue
+of it exists and both the participants and the partitioning are discovered during
+execution. Assumption~\ref{as:disjoint} holds when no composite's namespace extends
+another's. Disjoint aggregation alone does not suffice: a composite on
+\url{http://example.org/} and one on \url{http://example.org/a/} may aggregate disjoint
+documents and still both claim a triple about \url{http://example.org/a/x}.
+
+\subsubsection{Resolving claim status}
+\label{sec:claim-status}
+
+Call $t \in \dataf(d)$ \emph{local} if no composite namespace separates its subject from
+its source: for every composite $c$, $\mathrm{subj}(t) \in \mathrm{ns}(c)$ implies
+$\mathrm{iri}(d) \in \mathrm{ns}(c)$. Under Assumption~\ref{as:ns-aggregation} a local
+triple is covered, since a composite claiming it has $\mathrm{subj}(t) \in \mathrm{ns}(c)$,
+hence $d \in \Dd_c$ and $t \in \dataf(c)$. By Lemma~\ref{lem:covered-stable}, solutions
+built from local triples are sound as soon as they are produced; only solutions using a
+non-local triple, a statement about a resource in another namespace, can be invalidated
+by later discovery.
+
+\begin{remark}[Resolving claim status by request]
+\label{rem:claim-lookup}
+In practice the engine need not wait for discovery to settle whether a non-local triple
+$t$ is claimed. By Assumption~\ref{as:disjoint} at most one composite can claim $t$, and
+under namespace admissibility its location is fixed by $\mathrm{subj}(t)$ alone: it is the
+composite, if any, whose namespace contains $\mathrm{subj}(t)$. The engine can therefore
+resolve the claim status of $t$ with a request to this possible aggregator, for example
+by looking up an advertised composite along the path of $\mathrm{subj}(t)$ and, if one
+claims $t$, asking it whether it holds $t$. Including these lookups in $\disc$ makes the
+aggregator part of $\reach_B(W)$, so the outcome agrees with the answer under claims. An
+engine that resolves the status of every non-local triple before using it emits only
+solutions that remain valid, at the cost of one lookup per foreign namespace and one
+membership check per non-local triple, rather than a wait for the frontier to empty.
+This mirrors authoritative reasoning, where authority is decided per term by
+dereferencing~\cite{hogan2009authoritative}.~\todo{Mechanism for advertising a
+composite, and for establishing that none exists: storage description, link header?}
+\end{remark}
+
+\subsubsection{Star- and chain-shaped sub-queries}
+\label{sec:shapes}
+
+Subject-determined claims make the claim status of a matched triple a function of the
+binding of its subject. For a star whose patterns share the subject variable $?s$, all
+triples matched by a solution $\mu$ have subject $\mu(?s)$, so either $c$ claims all of
+them or none. The star is therefore claim-uniform for every composite, whatever the data,
+and Theorem~\ref{th:claim-delegation} applies at any time $T$; $\Phi_c$ keeps the
+solutions with $\mu(?s) \in S_c$. Patterns with distinct subject variables, as in chains,
+admit mixed solutions.~\todo{Formalise for stars and size-2
+chains}
+
+\todo{Section indicating how anchor variables are required to correctly filter out partial results}
+\todo{This then makes stars and size 2 chains attractive candidates to reduce client work, while
+longer chains can't really be pruned.}
