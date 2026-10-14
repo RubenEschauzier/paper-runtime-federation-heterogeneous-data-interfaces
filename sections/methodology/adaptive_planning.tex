@@ -1,7 +1,7 @@
 \subsection{Adaptive Query Planning with Composite Sources}
 \label{sec:planning}
-Theorem~\ref{th:claim-delegation} settles \emph{when} a sub-query may be delegated; we now
-turn to \emph{how} an engine uses such delegations. Composite sources are discovered while
+Theorem~\ref{th:claim-delegation} shows that a sub-query can be delegated correctly at any
+time. We now turn to \emph{how} an engine uses such delegations. Composite sources are discovered while
 the query runs, so the engine must integrate a composite's answers into a plan that is
 already executing and already holds intermediate state.
 

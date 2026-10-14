@@ -55,18 +55,19 @@ it, $t \in \dataf(c)$.
 
 \begin{lemma}[Covered solutions are stable]
 \label{lem:covered-stable}
-Under Assumption~\ref{as:disjoint}, let $\mu \in \Omega(T)$ be such that $\mu(t)$ is
-covered for every $t \in B$. Then $\mu \in \Omega(T')$ for every $T' \geq T$, and
+Under Assumption~\ref{as:disjoint}, let $\mu \in \Omega(T)$ be such that every triple of
+$\mu(B)$ is covered. Then $\mu \in \Omega(T')$ for every $T' \geq T$, and
 $\mu \in \ev{B}{G^{\alpha}_{\Dd}}$.
 \end{lemma}
 
 \begin{proof}
-Let $t \in B$ and $\tau = \mu(t) \in G^{T}$, so some $d \in \Dd(T)$ holds $\tau$. By
+Let $\tau \in \mu(B)$. As $\mu(B) \subseteq G^{T}$ by \eqref{eq:bgp-match}, some
+$d \in \Dd(T)$ holds $\tau$. By
 Assumption~\ref{as:disjoint} at most one source claims $\tau$. If no source of
 $\Dd(T')$ claims it, $\tau$ is admitted at $T'$ from $d \in \Dd(T')$. Otherwise its
 claimant $c \in \Dd(T')$ holds $\tau$, as $\tau$ is covered, and $\tau$ is admitted from
-$c$. Hence $\mu(B) \subseteq G^{T'}$, and $\mu \in \Omega(T')$ as
-$\mathrm{dom}(\mu) = \mathrm{var}(B)$. The same argument with $\Dd$ in place of
+$c$. Hence $\mu(B) \subseteq G^{T'}$, and $\mu \in \Omega(T')$ by
+\eqref{eq:bgp-match}. The same argument with $\Dd$ in place of
 $\Dd(T')$ gives $\mu \in \ev{B}{G^{\alpha}_{\Dd}}$.
 \end{proof}
 

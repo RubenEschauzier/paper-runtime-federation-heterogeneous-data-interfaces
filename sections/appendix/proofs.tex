@@ -1,0 +1,82 @@
+\section{Proof of Proposition~\ref{prop:correct-delegation}}
+\label{app:correct-delegation}
+
+\begin{proof}[Proof of Proposition~\ref{prop:correct-delegation}]
+We prove the special case of Definition~\ref{def:delegation} with $S = \{d\}$, so that
+$\Dd \setminus S = \Dd^{\prime}$, and we assume $B^{\prime} \neq \emptyset$.
+%% This proof previously also assumed here "that distinct sources use disjoint sets of
+%% blank nodes". That clause now relies on the preliminaries instead: Assumption 1
+%% (Skolemised sources) excludes blank nodes from source graphs altogether, so there are
+%% none left to keep disjoint, and \eqref{eq:distrib} below holds as a literal equality
+%% rather than only up to blank-node renaming. Restore the clause here if that
+%% assumption is ever dropped.
+
+The argument rests on the fact that a \emph{single} triple pattern distributes over a
+union of sources: for every $t$ and every $A \subseteq \Dd$,
+\begin{equation}
+  \ev{t}{G_{A}} \;=\; \bigcup_{e \in A} \ev{t}{\dataf(e)},
+  \label{eq:distrib}
+\end{equation}
+since matching one pattern involves no join. Note that \eqref{eq:distrib} fails for BGPs,
+which is exactly what makes delegation non-trivial.
+
+By hypothesis no source other than $d$ is relevant to any pattern of $B^{\prime}$, so
+Definition~\ref{def:relevance} gives
+\begin{equation}
+  \ev{t^{\prime}}{\dataf(d^{\prime})} = \emptyset
+  \quad \text{for all } t^{\prime} \in B^{\prime},\ d^{\prime} \in \Dd^{\prime}.
+  \label{eq:empty}
+\end{equation}
+
+\emph{Step 1.} A BGP is the join of its patterns, and each pattern distributes over the
+sources by \eqref{eq:distrib}:
+\[
+  \ev{B}{G_{\Dd}}
+  \;=\; \bigjoin_{t \in B} \ev{t}{G_{\Dd}}
+  \;=\; \bigjoin_{t \in B} \ \bigcup_{e \in \Dd} \ev{t}{\dataf(e)} .
+\]
+
+\emph{Step 2.} Since $\bowtie$ is associative and commutative, the delegated fragment
+splits off:
+\[
+  \ev{B}{G_{\Dd}} \;=\;
+  \Bigl( \bigjoin_{t^{\prime} \in B^{\prime}} \bigcup_{e \in \Dd}
+         \ev{t^{\prime}}{\dataf(e)} \Bigr)
+  \bowtie \ev{B \setminus B^{\prime}}{G_{\Dd}} .
+\]
+
+\emph{Step 3.} As $\Dd = \Dd^{\prime} \uplus \{d\}$, the inner union splits, and by
+\eqref{eq:empty} its $\Dd^{\prime}$ part is empty:
+\[
+  \bigcup_{e \in \Dd} \ev{t^{\prime}}{\dataf(e)}
+  \;=\; \underbrace{\bigcup_{d^{\prime} \in \Dd^{\prime}}
+        \ev{t^{\prime}}{\dataf(d^{\prime})}}_{=\,\emptyset}
+        \;\cup\; \ev{t^{\prime}}{\dataf(d)}
+  \;=\; \ev{t^{\prime}}{\dataf(d)} .
+\]
+Substituting into Step 2 and reassembling the join,
+\begin{equation}
+  \ev{B}{G_{\Dd}} \;=\;
+  \ev{B^{\prime}}{\dataf(d)} \bowtie \ev{B \setminus B^{\prime}}{G_{\Dd}} .
+  \label{eq:ref}
+\end{equation}
+
+\emph{Step 4.} It remains to identify $R$ from Definition~\ref{def:delegation}. Its
+second term vanishes, again by \eqref{eq:distrib} and \eqref{eq:empty} and using
+$B^{\prime} \neq \emptyset$:
+\[
+  \ev{B^{\prime}}{G_{\Dd \setminus S}}
+  \;=\; \bigjoin_{t^{\prime} \in B^{\prime}} \ \bigcup_{d^{\prime} \in \Dd^{\prime}}
+        \ev{t^{\prime}}{\dataf(d^{\prime})}
+  \;=\; \bigjoin_{t^{\prime} \in B^{\prime}} \emptyset
+  \;=\; \emptyset .
+\]
+With $S = \{d\}$ the first term of $R$ is the single request to $d$, so
+$R = \ev{B^{\prime}}{\dataf(d)} \cup \emptyset = \ev{B^{\prime}}{\dataf(d)}$.
+
+\emph{Conclusion.} Substituting $R$ into \eqref{eq:ref},
+\[
+  R \bowtie \ev{B \setminus B^{\prime}}{G_{\Dd}} \;=\; \ev{B}{G_{\Dd}},
+\]
+which is the correctness condition of Definition~\ref{def:delegation}.
+\end{proof}

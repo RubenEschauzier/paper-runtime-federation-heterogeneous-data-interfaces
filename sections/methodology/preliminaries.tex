@@ -12,17 +12,43 @@ $\mathcal{P} = (\mathcal{U} \cup \mathcal{V}) \times (\mathcal{U} \cup \mathcal{
 A \emph{solution mapping} is a partial function
 $\mu : \mathcal{V} \to \mathcal{U} \cup \mathcal{B} \cup \mathcal{L}$; we write
 $\mu_\emptyset$ for the one with empty domain, $\Omega$ for a set of solution mappings,
-and $\bowtie$ for their join. Evaluating a BGP $B$ over a graph $G$ distributes over its
-patterns,
+and $\bowtie$ for their join. Following \citet{perez2009semantics}, for a triple pattern
+$t$ we write $\mu(t)$ for the triple obtained by replacing the variables in $t$ according
+to $\mu$, and $\mathrm{var}(t)$ for the variables occurring in $t$. A triple pattern
+evaluates over a graph $G$ to
+\[
+  \ev{t}{G} \;=\; \{\, \mu \mid \mathrm{dom}(\mu) = \mathrm{var}(t) \text{ and }
+  \mu(t) \in G \,\},
+\]
+and evaluating a BGP $B$ distributes over its patterns,
 \[
   \ev{B}{G} \;=\; \bigjoin_{t \in B} \ev{t}{G},
   \qquad \ev{\emptyset}{G} = \{\mu_\emptyset\},
 \]
-so the empty BGP evaluates to the identity for $\bowtie$.
+so the empty BGP evaluates to the identity for $\bowtie$. For a BGP $B$ we write
+\[
+  \mu(B) \;=\; \{\, \mu(t) \mid t \in B \,\}
+\]
+for the set of triples obtained by applying $\mu$ to every pattern of $B$; patterns that
+$\mu$ maps to the same triple contribute it once. 
+
+As triple patterns contain no blank nodes, this evaluation coincides with basic graph
+pattern matching in SPARQL~\cite{sparql11-query}. Writing
+$\mathrm{var}(B)$ for the variables of $B$, a mapping is a solution of $B$ exactly when
+it binds all variables of $B$ and every triple it produces from $B$ occurs in $G$,
+\begin{equation}
+  \label{eq:bgp-match}
+  \mu \in \ev{B}{G} \iff \mathrm{dom}(\mu) = \mathrm{var}(B) \text{ and }
+  \mu(B) \subseteq G.
+\end{equation}
+In other words, $\mu(B)$ is the set of triples of $G$ from which the solution $\mu$ is
+obtained.
 
 Blank nodes are existential variables scoped to the document that serialises
 them~\cite{rdf11concepts}: no two sources share one, and none can be referenced in a
-later request~\cite{prudhommeaux2013federated}. We exclude them.
+later request~\cite{prudhommeaux2013federated}. As a result, a query decomposed over
+several sources can lose answers that join on a blank node within one
+source~\cite{stolpe2017blank}. We exclude them.
 
 \begin{assumption}[Skolemised sources]
 \label{as:skolem}

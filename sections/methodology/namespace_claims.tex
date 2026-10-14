@@ -74,15 +74,52 @@ composite, and for establishing that none exists: storage description, link head
 \subsubsection{Star- and chain-shaped sub-queries}
 \label{sec:shapes}
 
+Theorem~\ref{th:claim-delegation} makes delegation correct for every $B'$. What it saves
+depends on the base plan, the second term of $R^{*}$. Results that $c$ already supplies
+are discarded by $\overline{\Phi}_c$, but only after the base plan has produced them.
+Delegation pays off when the base plan recognises such results early, or does not need the
+triples $c$ claims at all. The latter holds for sub-queries without mixed solutions.
+
+\begin{definition}[Claim-uniform sub-query]
+\label{def:uniform}
+Let $G = G^{\alpha}_{\Dd}$. A BGP $B'$ is \emph{claim-uniform} for a composite $c$ if
+every $\mu \in \ev{B'}{G}$ has $c$ claim either every triple of $\mu(B')$ or none of
+them.
+\end{definition}
+
+For a claim-uniform $B'$, a solution with one triple that $c$ does not claim uses no
+triple that $c$ claims, so the base plan may disregard the claim of $c$ for the patterns
+of $B'$.
+
 Subject-determined claims make the claim status of a matched triple a function of the
 binding of its subject. For a star whose patterns share the subject variable $?s$, all
 triples matched by a solution $\mu$ have subject $\mu(?s)$, so either $c$ claims all of
 them or none. The star is therefore claim-uniform for every composite, whatever the data,
-and Theorem~\ref{th:claim-delegation} applies at any time $T$; $\Phi_c$ keeps the
-solutions with $\mu(?s) \in S_c$. Patterns with distinct subject variables, as in chains,
-admit mixed solutions.~\todo{Formalise for stars and size-2
-chains}
+and $\Phi_c$ keeps exactly the solutions with $\mu(?s) \in S_c$. Patterns with distinct
+subject variables, as in chains, admit mixed solutions.
 
-\todo{Section indicating how anchor variables are required to correctly filter out partial results}
-\todo{This then makes stars and size 2 chains attractive candidates to reduce client work, while
-longer chains can't really be pruned.}
+\todo{Formalise when the base plan recognises results that $c$ already supplies, under
+subject-determined claims. Considerations.
+(1) A solution $\mu$ is fully claimed by $c$ iff every subject of $\mu(B')$ lies in $S_c$.
+Its claim status is thus decided by any sub-pattern $P \subseteq B'$ whose variables
+include all subject variables of $B'$ (anchor variables). Constant subjects are known
+upfront.
+(2) Asymmetry. ``Not fully claimed'' is decided as soon as one bound subject lies outside
+$S_c$, so such partial results are kept without further checks. ``Fully claimed'' needs
+all subject variables bound.
+(3) Star. One subject variable, so decided at the first pattern. Claim-uniform, so the base
+plan never needs the claimed triples of $B'$ and fetches nothing from the namespace of $c$
+for $B'$. This needs unclaimed triples held by $c$ to be found through the sources it
+aggregates (formerly Assumption ``reachable aggregation'', $\Dd_c \subseteq \Dd$).
+(4) Chain of size 2. The first pattern binds both subject variables, so also decided at the
+first pattern. Not claim-uniform ($?s$ in $S_c$, $?x$ outside), so the claimed triples are
+still needed. Saves join work, not fetches.
+(5) Chain of size $n$. Decided only after the first $n-1$ patterns ($n-2$ joins along the
+chain), so little can be pruned. Stars and size-2 chains are therefore the attractive
+candidates (star-first heuristic, Section~\ref{sec:planning}).
+(6) Where the base plan gets claimed triples from. They are admitted only from $c$
+(Lemma~\ref{lem:exclusive}). Local triples can be read from documents in $\Dd_c$
+(Assumption~\ref{as:ns-aggregation}), non-local ones need the lookup of
+Remark~\ref{rem:claim-lookup}.
+(7) Tie $\overline{\Phi}_c$ to routing, as the filter on the base copy that declines $c$
+(Section~\ref{sec:routing}).}

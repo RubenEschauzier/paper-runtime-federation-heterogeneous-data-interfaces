@@ -20,98 +20,97 @@ to what the claim semantics admits. The engine can always check the claim of $c$
 $\alpha_c$ is known once $c$ is retrieved. For a BGP $B'$ we therefore keep the solutions
 whose matched triples $c$ all claims,
 \[
-  \Phi_c(\Omega) \;=\; \bigl\{\, \mu \in \Omega \;\bigm|\; c \text{ claims } \mu(t)
-  \text{ for every } t \in B' \,\bigr\},
+  \Phi_c(\Omega) \;=\; \bigl\{\, \mu \in \Omega \;\bigm|\; \alpha_c(\tau) = 1
+  \text{ for every } \tau \in \mu(B') \,\bigr\}.
 \]
-and evaluate the rest of $B'$ over the other sources. This refines
-Definition~\ref{def:delegation} for $S = \{c\}$:
+
+Theorem~\ref{th:undetermined} shows that the condition of
+Proposition~\ref{prop:correct-delegation} cannot be checked under incomplete discovery, as a
+source behind the frontier may hold triples that match $B'$. For triples that a
+composite $c$ claims, this cannot happen. By Lemma~\ref{lem:exclusive}, such a triple is
+admitted only from $c$, so no other source contributes it to $G = G^{\alpha}_{\Dd}$,
+whether it has been discovered or not. Filtering the answer of $c$ with $\Phi_c$ thus
+yields exactly the solutions of $B'$ that consist of triples $c$ claims. We take the
+remaining solutions from the rest of the plan, which evaluates $B'$ as usual and drops
+what $c$ already supplies. With
 \[
-  R \;:=\; \Phi_c\bigl(\ev{B'}{\dataf(c)}\bigr) \;\cup\;
-  \ev{B'}{G^{\alpha}_{\Dd \setminus \{c\}}}.
+  \overline{\Phi}_c(\Omega) \;=\; \Omega \setminus \Phi_c(\Omega)
 \]
-Unclaimed triples held by $c$ are also held by the sources it aggregates, so they are
-found by the second term, provided these sources are reachable.
-
-\begin{assumption}[Reachable aggregation]
-\label{as:agg-reach}
-If a composite $c$ is in $\Dd$, so is every source it aggregates: $\Dd_c \subseteq \Dd$.
-\end{assumption}
-
-This holds, for instance, when a composite exposes its sources and $\disc$ follows them.
-What can go wrong is a solution that the two terms split between them.
-
-\begin{definition}[Claim-uniform sub-query]
-\label{def:uniform}
-Let $G = G^{\alpha}_{\Dd}$. A BGP $B'$ is \emph{claim-uniform} for a composite $c$ if
-every $\mu \in \ev{B'}{G}$ has $c$ claim either all of $\mu(t)$, $t \in B'$, or none of
-them.
-\end{definition}
+the solutions $\mu$ with at least one triple of $\mu(B')$ that $c$ does not claim, let
+\[
+  R^{*} \;:=\; \Phi_c\bigl(\ev{B'}{\dataf(c)}\bigr) \;\cup\;
+  \overline{\Phi}_c\bigl(\ev{B'}{G}\bigr).
+\]
 
 \begin{theorem}[Delegation to a claim]
 \label{th:claim-delegation}
-Under Assumptions~\ref{as:disjoint} and~\ref{as:agg-reach}, let $B' \subseteq B$ be
-non-empty, $c \in \Dd(T)$ a composite, and $G = G^{\alpha}_{\Dd}$. Then
-$R = \ev{B'}{G}$ if and only if $B'$ is claim-uniform for $c$; in that case delegating
-$B'$ to $c$ is correct. Consequently, whenever claim uniformity follows from $B'$ and
-$\alpha_c$ alone, correctness is determined at $T$, whether or not $F(T) = \emptyset$.
+Under Assumption~\ref{as:disjoint}, let $c \in \Dd(T)$ be a composite and $B' \subseteq B$
+non-empty. Then
+\[
+  \Phi_c\bigl(\ev{B'}{\dataf(c)}\bigr) \;=\; \Phi_c\bigl(\ev{B'}{G}\bigr),
+\]
+and this equality is determined at $T$. Consequently, $R^{*} = \ev{B'}{G}$ with disjoint
+terms, so delegating $B'$ to $c$ is correct for every $B'$ and produces no solution twice.
 \end{theorem}
 
 \begin{proof}
-Write $G_c := G^{\alpha}_{\{c\}}$ and $G_{\neg c} := G^{\alpha}_{\Dd \setminus \{c\}}$.
+  Write $H_c := \{\, \tau \in \Tt \mid \alpha_c(\tau) = 1 \,\}$ for the triples $c$ claims.
+  For any graph $G'$, a solution $\mu \in \ev{B'}{G'}$ is kept by $\Phi_c$ exactly when
+  $\mu(B') \subseteq G' \cap H_c$, so by \eqref{eq:bgp-match}
+  \[
+    \Phi_c\bigl(\ev{B'}{G'}\bigr) \;=\; \ev{B'}{G' \cap H_c}.
+  \]
+  Applying this to both sides, it suffices to show $\dataf(c) \cap H_c = G \cap H_c$.
+  ($\subseteq$) A triple of $\dataf(c)$ that $c$ claims is admitted from $c$ by the first
+  clause of \eqref{eq:admitted}, and $c \in \Dd$, so it lies in $G$. ($\supseteq$) A triple
+  of $G$ that $c$ claims lies in $\dataf(c)$ by Lemma~\ref{lem:exclusive}.
 
-($R \subseteq \ev{B'}{G}$.) A triple of $\dataf(c)$ that $c$ claims is admitted from
-$c$ by the first clause of \eqref{eq:admitted}, so a solution kept by $\Phi_c$ maps into
-$G_c \subseteq G$. The second term maps into $G_{\neg c} \subseteq G$.
+  The left-hand side depends only on $\dataf(c)$ and $\alpha_c$, both observed once $c$ is
+  retrieved. As the argument holds in every state satisfying
+  Assumption~\ref{as:disjoint}, the claimed fragment of the reference answer is known
+  at $T$.
 
-($\ev{B'}{G} \subseteq R$ under uniformity.) Let $\mu \in \ev{B'}{G}$. If $c$ claims every
-$\mu(t)$, each is admitted only from $c$ by Lemma~\ref{lem:exclusive}, hence lies in
-$\dataf(c)$; so $\mu \in \ev{B'}{\dataf(c)}$ and $\Phi_c$ keeps it. If $c$ claims no
-$\mu(t)$, let $\tau = \mu(t)$ be admitted from $d$. If $d \neq c$, then
-$\tau \in G_{\neg c}$. If $d = c$, then $\tau$ is unclaimed, as $c$ does not claim it and
-by \eqref{eq:admitted} no other source does; it is held by some $d' \in \Dd_c$, which lies
-in $\Dd$ by Assumption~\ref{as:agg-reach} and admits $\tau$, so again
-$\tau \in G_{\neg c}$. Hence $\mu \in \ev{B'}{G_{\neg c}}$.
-
-(Necessity.) Let $\mu \in \ev{B'}{G}$ mix claimed and unclaimed triples, with $c$
-claiming $\mu(t_1)$ but not $\mu(t_2)$. Then $\Phi_c$ discards $\mu$, and
-$\mu(t_1) \notin G_{\neg c}$ by Lemma~\ref{lem:exclusive}, so $\mu \notin R$.
-
-Given $R = \ev{B'}{G}$, $R \bowtie \ev{B \setminus B'}{G} = \ev{B}{G}$, which is
-correctness. Finally, $\Phi_c$ depends only on $\alpha_c$, and the argument quantifies over
-every source of $\Dd$, discovered or not; so whenever uniformity is guaranteed by $B'$ and
-$\alpha_c$ alone, the verdict is the same in every state observationally equivalent to
-$W(T)$.
+  For the consequence, substituting the equality into $R^{*}$ gives
+  \[
+    R^{*} \;=\; \Phi_c\bigl(\ev{B'}{G}\bigr) \cup \overline{\Phi}_c\bigl(\ev{B'}{G}\bigr)
+    \;=\; \ev{B'}{G},
+  \]
+  as $\Phi_c$ and $\overline{\Phi}_c$ split $\ev{B'}{G}$ into two disjoint parts, which are
+  the two terms of $R^{*}$. A BGP evaluates to the join of its patterns, and $\bowtie$ is
+  associative and commutative, so $B' \subseteq B$ gives
+  \[
+    \ev{B}{G} \;=\; \ev{B'}{G} \bowtie \ev{B \setminus B'}{G}
+    \;=\; R^{*} \bowtie \ev{B \setminus B'}{G}.
+  \]
+  This is the correctness condition of Definition~\ref{def:delegation}, with $R^{*}$ as
+  the answer to $B'$ and the claim semantics as reference
+  (Definition~\ref{def:claim-semantics}).
 \end{proof}
 
-Theorem~\ref{th:claim-delegation} pins down what remains of the adversary of
-Theorem~\ref{th:undetermined}: it wins only by building a solution that mixes a triple
-claimed by $c$ with one that is not, so that the join crosses the boundary of $c$. Claim
-uniformity is exactly the absence of such solutions. A triple placed behind the frontier
-that $c$ claims is admitted only from $c$, and one that $c$ does not claim is found by the
-second term; neither breaks a uniform sub-query.
+Theorem~\ref{th:claim-delegation} recovers Proposition~\ref{prop:correct-delegation} under
+incomplete discovery. Restricted to the triples $c$ claims, $c$ is the only relevant
+source, by construction rather than by observation. The adversary of
+Theorem~\ref{th:undetermined} can still place triples behind the frontier, but a triple
+that $c$ claims is not admitted from any other source, so it cannot add solutions to the
+claimed fragment. These solutions also never need to be retracted. Every triple of
+$\mu(B')$ is held by its claimant, so it is covered (Definition~\ref{def:covered}), and
+the argument of Lemma~\ref{lem:covered-stable} applies.
 
-The simplest uniform case needs no knowledge of the data at all: if $c$ claims every
-triple matching every pattern of $B'$, all solutions are fully claimed. We say $B'$ is
-then \emph{within the claim} of $c$; the second term of $R$ is empty and
-$\Phi_c$ is the identity. Under namespace claims (Section~\ref{sec:namespace-claims}) this
-requires constant subjects in the namespace of $c$. Uniformity is much weaker: it only
-forbids mixed solutions, and Section~\ref{sec:shapes} shows that subject-determined
-claims guarantee it for star-shaped sub-queries regardless of the data. A composite that
-claims nothing has $\Phi_c(\Omega) = \emptyset$, so delegating to it is vacuous: we
-delegate only to claimants, and a single document only as a degenerate composite that
-declares a claim.
+Correctness thus holds for every $B'$. What delegation saves, and how the base plan
+recognises results that $c$ already supplies, depends on the admissibility function.
+Section~\ref{sec:shapes} settles this for namespace claims.
 
 
-\todo{Lemma on how theorem 1 holds if we filter any sources in scope 
-of $c$ both backwards and forwards in time. Mention how the filtering changes
-nothing given the assumptions / semantics of our model}
-\begin{proof}
-  Sketch
-  Part 1. If we filter -> Theorem~\ref{th:correct-delegation} can be directly applied
-  Part 2. Filtering is possible: forward -> easy just take $\disc()$ 
-  and apply setminus of in scope documents.
-  Backwards -> deduplication, we only have duplicate results. So filter any
-  intermediate results at time T in data(scope) and filter any produced results
-  in composite resource on B prime
-\end{proof}
+% \todo{Lemma on how theorem 1 holds if we filter any sources in scope 
+% of $c$ both backwards and forwards in time. Mention how the filtering changes
+% nothing given the assumptions / semantics of our model}
+% \begin{proof}
+%   Sketch
+%   Part 1. If we filter -> Proposition~\ref{prop:correct-delegation} can be directly applied
+%   Part 2. Filtering is possible: forward -> easy just take $\disc()$ 
+%   and apply setminus of in scope documents.
+%   Backwards -> deduplication, we only have duplicate results. So filter any
+%   intermediate results at time T in data(scope) and filter any produced results
+%   in composite resource on B prime
+% \end{proof}
 
