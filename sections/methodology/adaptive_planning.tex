@@ -113,21 +113,11 @@ without requiring the composite source to be joined exactly when the split happe
 \end{figure}
 
 \paragraph{Canonical order.}
-Two copies emit the same result whenever both can reach the same combination of
-composites: a copy that passed $c$ by may still join it later, and with disjoint
-composites one copy may join $c_a$ then $c_b$ and another $c_b$ then $c_a$. We therefore
-let each copy record the set $D$ of composites it \emph{declines}, and route it to no
-composite in $D$. Composites are indexed in order of discovery, and at a split each copy
-declines composites offered there: the copy on the base route declines all of them, and
-the copy bound for $c_j$ declines those with a lower index. Any two copies of a split then
-differ on a composite that one joins and the other never does, so their results are
-disjoint. Since the copy bound for $c_j$ keeps the higher-indexed composites, every
-combination of disjoint composites remains reachable by exactly one copy. A global order,
-admitting $c_j$ only above the last composite joined, would not suffice: when $c_b$ can be
-joined before $c_a$, the combination of both is lost. This resembles the timestamps of
-SteMs~\cite{raman2003using}, which prevent a result from being produced once per arrival
-order of its inputs; the duplicates here instead arise from copies choosing composites
-in different orders, which timestamps do not prevent.
+Copies may still reach the same composites, e.g.\ $c_a$ then $c_b$ and $c_b$ then $c_a$.
+To prevent this, at a split the base copy declines every composite offered there, and the
+copy bound for $c_j$ declines those with a lower discovery index. Two copies of a split
+thus differ on a composite only one of them joins, so each combination of disjoint
+composites is produced exactly once.
 
 \todo{Proposition: the eddy emits every solution of $\ev{B}{G^{\alpha}_{\Dd}}$ exactly
 once.}

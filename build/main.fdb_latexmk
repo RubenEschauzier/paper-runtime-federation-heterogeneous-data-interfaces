@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex build/main"] 1791904139.42149 "build/main.aux" "build/main.bbl" "build/main" 1791904140.80898 0
+["bibtex build/main"] 1791904293.91216 "build/main.aux" "build/main.bbl" "build/main" 1791904297.25317 0
   "./ACM-Reference-Format.bst" 1789725787.54966 94292 6c9c536013d461258ea4a4813fe90aa8 ""
   "./references/references.bib" 1791902387.16332 12559 7e2b31a523d253d52dbbf9f906b69f51 ""
-  "build/main.aux" 1791904140.46669 9906 0a5558a9d8e4910282f26edeaec29c07 "pdflatex"
+  "build/main.aux" 1791904296.40536 9880 ca513fbd9936e212bdb36bed50ea066d "pdflatex"
   (generated)
   "build/main.bbl"
   "build/main.blg"
   (rewritten before read)
-["pdflatex"] 1791904139.52989 "main.tex" "build/main.pdf" "main" 1791904140.80924 0
+["pdflatex"] 1791904294.12436 "main.tex" "build/main.pdf" "main" 1791904297.25341 0
   "/etc/texmf/web2c/texmf.cnf" 1770288521.25536 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_25tcsq.enc" 1490131464 2921 8ca0eb0831f9bc5da080d3697cfe67bf ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_76gpa5.enc" 1490131464 2933 9ad527ce78d7c5fa0a642dead095f172 ""
@@ -237,16 +237,16 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1770288536.82692 5472669 54eaf61a88b6b7896ebd0dac973cb29c ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1770288579 8215030 67d84bed42aee6fbdcb2fb9dde4c572f ""
-  "build/main.aux" 1791904140.46669 9906 0a5558a9d8e4910282f26edeaec29c07 "pdflatex"
-  "build/main.bbl" 1791904139.52234 8311 31c29e95f3a379c811a17ae1b57e1bae "bibtex build/main"
-  "build/main.out" 1791904140.46769 2648 934d37d7cd291376ad6e666b641c8922 "pdflatex"
+  "build/main.aux" 1791904296.40536 9880 ca513fbd9936e212bdb36bed50ea066d "pdflatex"
+  "build/main.bbl" 1791904294.11134 8311 31c29e95f3a379c811a17ae1b57e1bae "bibtex build/main"
+  "build/main.out" 1791904296.40636 2648 934d37d7cd291376ad6e666b641c8922 "pdflatex"
   "figures/eddy-join-state.pdf" 1791467298.60366 18357 10a6d2758d4f2db87de07922955fd911 ""
   "figures/parallel-routing.pdf" 1791900558.07997 12730 369fd02e22eec86e2070c55f16235cbc ""
   "figures/static-plan.pdf" 1791467298.34967 9706 cad0494120b61a5a4e4fc424a4d65523 ""
   "figures/stem-eddy.pdf" 1791900185.43675 15627 9c19355c38d258c8fc1dc3426b557372 ""
   "main.tex" 1791901751.5739 6577 b3b900c0842a7f438b8714424d850f73 ""
   "reviewing.tex" 1789725787.56942 980 d51272bd43b3bc8006ca62ad1404a4e2 ""
-  "sections/methodology/adaptive_planning.tex" 1791904136.81372 8307 575fe8099803289c95dea098472cb8f4 ""
+  "sections/methodology/adaptive_planning.tex" 1791904290.82901 7424 534e851f9965f22d4eb7e36947f94266 ""
   "sections/methodology/claims.tex" 1791892272.65039 9843 d1c3762990b9b83c4e3012594f0c71ff ""
   "sections/methodology/discovery_settings.tex" 1791892132.52324 16292 18824804ee774d9fe53f9852d9ba4409 ""
   "sections/methodology/monotonicity.tex" 1791892302.86128 3483 59c28511fd3cee693c645290d2d6a529 ""
