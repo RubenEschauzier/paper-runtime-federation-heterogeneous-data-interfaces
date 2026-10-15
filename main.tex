@@ -38,7 +38,8 @@
 \pagestyle{plain} % Simple page numbering for review
 
 %% Metadata
-\title{Adaptive Runtime Federation in Discovery-based Querying}
+% \title{Adaptive Runtime Federation in Discovery-based Querying}
+\title{Adaptive Runtime Source Discovery in Federated Query Processing}
 
 %% Author block
 %% Anonymized automatically because the 'anonymous' class option is active.
@@ -78,7 +79,7 @@ Your abstract text goes here. Keep it concise, focused on the core database or d
 
 \section{Introduction}
 
-\section{Related Work}
+\input{sections/related_work/related_work.tex}
 
 \section{Methodology}
 
@@ -124,6 +125,16 @@ Experiments:
 - Query where linear is fastest to delegate with multiple pods (show if cost-based doesn't fail)
 - Query where star is fastest multiple pods (show if cost-based doesn't fail)
 - Multiple vs Single pod query
+
+
+- Federation centrally positioned -> discovery is what we add 
+- Possibly have a traditional federated part, with a discovery part of the Federation
+- Frame it around trustworty AI, as authority claims are form of trust. User can say I trust These
+source to be authoritative over subset of data.
+- AI agents already do traversal not over knowledge graph. So sort of discovery-based querying.
+- User specifies sources, but sometimes AI finds new sources which needs to be discovers. 
+- Can be with user input.
+
 
 \section{Conclusion}
 Summarize results and point to future work.

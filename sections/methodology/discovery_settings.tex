@@ -1,6 +1,6 @@
 \subsection{Query Delegation in Discovery Settings}
 \label{sec:authority}
-
+\todo{Our framing is the same as: Linked Data Query Processing Strategies ISWC}
 Dynamically integrating conjunctive sub-queries during federated query processing 
 in discovery-based querying at runtime is difficult due to the unbounded nature of
 the query execution. To show this, we first introduce a sufficient
@@ -106,9 +106,9 @@ single triple pattern distributes over a union of sources, as matching one patte
 involves no join, whereas a BGP does not.
 
 Proposition~\ref{prop:correct-delegation} gives us a sufficient condition for delegating 
-conjuctive sub-queries in the case where the reachable set $\Dd$ is known in advance. However, in discovery-based
-querying the sources are discovered at runtime, goverened by some discovery process which returns
-during the query execution. As such, determining if we can correctly delegate depends on the
+conjuctive sub-queries in the case where the reachable set $\Dd$ is known in advance. 
+However, in discovery-based querying the sources are discovered at runtime, according to a discovery process.
+As such, determining if we can correctly delegate depends on the
 \emph{state} of the discovery process, which is defined in Definition~\ref{def:discovery-state}.
 
 \begin{definition}[Discovery state]
